@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/react-native';
 import { supabase, auth } from '@/lib/supabase';
 
 interface AuthContextType {
@@ -46,6 +47,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Update Sentry user context
+        if (session?.user) {
+          Sentry.setUser({
+            id: session.user.id,
+            email: session.user.email,
+            username: session.user.user_metadata?.name || session.user.email,
+          });
+        } else {
+          Sentry.setUser(null);
+        }
       }
     );
 

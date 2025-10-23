@@ -1,4 +1,5 @@
 import { Alert } from 'react-native';
+import * as Sentry from '@sentry/react-native';
 
 export interface AppError {
   message: string;
@@ -100,7 +101,7 @@ export function showErrorAlert(error: any, title: string = 'Error') {
 }
 
 /**
- * Log error for debugging (can be extended with Sentry later)
+ * Log error for debugging and send to Sentry
  */
 export function logError(error: any, context?: string) {
   const appError = parseSupabaseError(error);
@@ -112,9 +113,19 @@ export function logError(error: any, context?: string) {
     timestamp: new Date().toISOString(),
   });
 
-  // TODO: Send to Sentry/analytics service
-  // if (__DEV__) return;
-  // Sentry.captureException(error, { contexts: { app: { context } } });
+  // Send to Sentry in production
+  if (!__DEV__) {
+    Sentry.captureException(error, {
+      tags: {
+        context: context || 'unknown',
+        errorCode: appError.code || 'unknown',
+      },
+      extra: {
+        appError: appError,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
 }
 
 /**

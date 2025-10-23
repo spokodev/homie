@@ -4,12 +4,24 @@ import { SplashScreen, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import * as Sentry from '@sentry/react-native';
 import { Colors } from '@/theme';
 import { usePremiumStore } from '@/stores/premium.store';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { HouseholdProvider } from '@/contexts/HouseholdContext';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+
+// Initialize Sentry
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',
+  enabled: !__DEV__, // Only enable in production
+  tracesSampleRate: 1.0, // Capture 100% of transactions for performance monitoring
+  debug: false, // Set to true for debugging
+  environment: __DEV__ ? 'development' : 'production',
+  enableAutoSessionTracking: true,
+  sessionTrackingIntervalMillis: 30000, // 30 seconds
+});
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -88,7 +100,7 @@ function NavigationContent() {
   );
 }
 
-export default function RootLayout() {
+function RootLayoutComponent() {
   const initializePremium = usePremiumStore((state) => state.initialize);
 
   const [fontsLoaded] = useFonts({
@@ -127,3 +139,6 @@ export default function RootLayout() {
     </ErrorBoundary>
   );
 }
+
+// Wrap with Sentry for error tracking
+export default Sentry.wrap(RootLayoutComponent);
