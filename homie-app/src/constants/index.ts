@@ -58,13 +58,28 @@ export const APP_CONFIG = {
   }
 } as const;
 
+// Task Categories
+export const TASK_CATEGORIES = [
+  { id: 'cleaning', name: 'Cleaning', icon: '🧹', color: '#10B981' },
+  { id: 'kitchen', name: 'Kitchen', icon: '🍳', color: '#F59E0B' },
+  { id: 'bathroom', name: 'Bathroom', icon: '🚿', color: '#3B82F6' },
+  { id: 'pet', name: 'Pet Care', icon: '🐕', color: '#8B5CF6' },
+  { id: 'laundry', name: 'Laundry', icon: '🧺', color: '#EC4899' },
+  { id: 'outdoor', name: 'Outdoor', icon: '🌱', color: '#14B8A6' },
+  { id: 'maintenance', name: 'Maintenance', icon: '🔧', color: '#6B7280' },
+  { id: 'shopping', name: 'Shopping', icon: '🛒', color: '#EF4444' },
+  { id: 'general', name: 'General', icon: '📋', color: '#6366F1' },
+] as const;
+
+export type TaskCategoryId = typeof TASK_CATEGORIES[number]['id'];
+
 // Task Templates
 export const TASK_TEMPLATES = [
   { id: '1', title: 'Quick Clean', icon: '🧹', minutes: 15, points: 20, category: 'cleaning' },
   { id: '2', title: 'Do Dishes', icon: '🍽️', minutes: 20, points: 15, category: 'kitchen' },
   { id: '3', title: 'Take Out Trash', icon: '🗑️', minutes: 5, points: 10, category: 'general' },
   { id: '4', title: 'Walk Dog', icon: '🐕', minutes: 30, points: 25, category: 'pet' },
-  { id: '5', title: 'Laundry', icon: '🧺', minutes: 45, points: 30, category: 'cleaning' },
+  { id: '5', title: 'Laundry', icon: '🧺', minutes: 45, points: 30, category: 'laundry' },
   { id: '6', title: 'Vacuum', icon: '🔌', minutes: 25, points: 25, category: 'cleaning' },
   { id: '7', title: 'Bathroom Clean', icon: '🚿', minutes: 30, points: 35, category: 'bathroom' },
   { id: '8', title: 'Kitchen Deep Clean', icon: '🍳', minutes: 45, points: 40, category: 'kitchen' }

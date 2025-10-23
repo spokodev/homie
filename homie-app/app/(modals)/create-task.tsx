@@ -7,11 +7,11 @@ import {
   ScrollView,
   ActivityIndicator,
   Modal,
-  Platform,
   TextInput as RNTextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
 import { useCreateTask } from '@/hooks/useTasks';
 import { useHousehold } from '@/contexts/HouseholdContext';
@@ -26,7 +26,7 @@ import {
   validateRoomName,
 } from '@/utils/validation';
 import { trackTaskEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
-import { TASK_TEMPLATES } from '@/constants';
+import { TASK_TEMPLATES, TASK_CATEGORIES, TaskCategoryId } from '@/constants';
 
 export default function CreateTaskModal() {
   const router = useRouter();
@@ -40,6 +40,7 @@ export default function CreateTaskModal() {
   const [room, setRoom] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState('');
   const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined);
+  const [category, setCategory] = useState<TaskCategoryId | undefined>(undefined);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [errors, setErrors] = useState<{
@@ -57,6 +58,7 @@ export default function CreateTaskModal() {
   const handleTemplateSelect = (template: typeof TASK_TEMPLATES[number]) => {
     setTitle(template.title);
     setEstimatedMinutes(template.minutes.toString());
+    setCategory(template.category as TaskCategoryId);
     // Clear errors
     setErrors({});
   };
@@ -112,12 +114,13 @@ export default function CreateTaskModal() {
     }
 
     try {
-      const task = await createTask.mutateAsync({
+      await createTask.mutateAsync({
         title: title.trim(),
         description: description.trim() || undefined,
         room: room.trim() || undefined,
         estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes) : undefined,
         assignee_id: assigneeId || undefined,
+        category: category || undefined,
         due_date: dueDate?.toISOString() || undefined,
         household_id: household.id,
         created_by_member_id: member.id,
@@ -308,6 +311,44 @@ export default function CreateTaskModal() {
           </ScrollView>
         </View>
 
+        {/* Category */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Category (Optional)</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoryScroll}
+          >
+            {TASK_CATEGORIES.map((cat) => {
+              const isSelected = category === cat.id;
+              return (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[
+                    styles.categoryOption,
+                    isSelected && {
+                      borderColor: cat.color,
+                      backgroundColor: cat.color + '15',
+                    },
+                  ]}
+                  onPress={() => setCategory(cat.id)}
+                  disabled={createTask.isPending}
+                >
+                  <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                  <Text
+                    style={[
+                      styles.categoryName,
+                      isSelected && { color: cat.color, fontWeight: '600' },
+                    ]}
+                  >
+                    {cat.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
         {/* Due Date */}
         <View style={styles.section}>
           <Text style={styles.label}>Due Date (Optional)</Text>
@@ -437,7 +478,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray200,
+    borderBottomColor: Colors.gray300,
     backgroundColor: Colors.white,
   },
   headerTitle: {
@@ -535,6 +576,29 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: '600',
   },
+  categoryScroll: {
+    marginTop: Spacing.xs,
+  },
+  categoryOption: {
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.medium,
+    borderWidth: 2,
+    borderColor: Colors.gray300,
+    backgroundColor: Colors.white,
+    marginRight: Spacing.sm,
+    minWidth: 90,
+  },
+  categoryIcon: {
+    fontSize: 24,
+    marginBottom: Spacing.xs,
+  },
+  categoryName: {
+    ...Typography.bodySmall,
+    color: Colors.text,
+    textAlign: 'center',
+  },
   infoCard: {
     flexDirection: 'row',
     backgroundColor: Colors.secondary + '20',
@@ -622,7 +686,7 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.md,
   },
   dateInput: {
-    backgroundColor: Colors.gray200,
+    backgroundColor: Colors.gray300,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     ...Typography.bodyLarge,

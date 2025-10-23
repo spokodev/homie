@@ -10,6 +10,7 @@ export interface Task {
   title: string;
   description?: string;
   room?: string;
+  category?: string;
   status: 'pending' | 'in_progress' | 'completed';
   assignee_id?: string;
   assignee_name?: string;
@@ -27,6 +28,7 @@ export interface CreateTaskInput {
   title: string;
   description?: string;
   room?: string;
+  category?: string;
   assignee_id?: string;
   due_date?: string;
   estimated_minutes?: number;
