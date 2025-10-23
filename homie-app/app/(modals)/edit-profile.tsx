@@ -15,8 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useUpdateMember } from '@/hooks/useMembers';
-
-const AVATAR_OPTIONS = ['😊', '😎', '🤓', '😴', '🥳', '🤠', '👨', '👩', '🧑'];
+import { COMMON_AVATARS } from '@/constants';
+import { trackEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -61,6 +61,12 @@ export default function EditProfileScreen() {
           name: trimmedName,
           avatar: selectedAvatar,
         },
+      });
+
+      trackEvent(ANALYTICS_EVENTS.PROFILE_UPDATED, {
+        member_id: member.id,
+        avatar_changed: selectedAvatar !== member.avatar,
+        name_changed: trimmedName !== member.name,
       });
 
       Alert.alert('Success', 'Profile updated successfully!');
@@ -117,8 +123,12 @@ export default function EditProfileScreen() {
         {/* Avatar Picker */}
         <View style={styles.section}>
           <Text style={styles.label}>Choose Avatar</Text>
-          <View style={styles.avatarGrid}>
-            {AVATAR_OPTIONS.map((avatar) => (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.avatarScroll}
+          >
+            {COMMON_AVATARS.map((avatar) => (
               <TouchableOpacity
                 key={avatar}
                 style={[
@@ -135,7 +145,7 @@ export default function EditProfileScreen() {
                 )}
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
         </View>
 
         {/* Info Note */}
@@ -224,9 +234,12 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: Spacing.xs,
   },
+  avatarScroll: {
+    marginHorizontal: -Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+  },
   avatarGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: Spacing.md,
   },
   avatarOption: {
