@@ -4,7 +4,7 @@
 
 HomieLife is a gamified household task management application built with React Native, Expo, and Supabase. The app helps families organize tasks, track progress, and make household chores fun through points, levels, badges, and weekly captain rotations.
 
-**Progress:** 318 SP / 387 SP (82.2% Complete)
+**Progress:** 337 SP / 387 SP (87.1% Complete)
 **Technology Stack:** React Native 0.74.5, Expo SDK 51, TypeScript, Supabase, React Query
 
 ---
@@ -164,6 +164,50 @@ HomieLife is a gamified household task management application built with React N
   - Onboarding funnel (4 steps)
   - Premium conversion funnel (3 steps)
   - Task completion funnel (2 steps)
+
+### 9. Push Notifications System ✅ (EPIC 14 - 19 SP)
+- **Push Notification Setup:**
+  - Expo push notification integration
+  - Permission request and handling
+  - Push token registration and storage
+  - Physical device detection
+- **Notification Channels (Android):**
+  - Tasks channel (high priority)
+  - Messages channel (high priority)
+  - Captain channel (default priority)
+  - Default channel with vibration
+- **Notification Types:**
+  - Task assigned notifications
+  - Task completed notifications
+  - New message notifications
+  - Captain rotation notifications
+  - Rating request notifications
+- **Notification Center:**
+  - In-app notification history
+  - View all received notifications
+  - Dismiss individual notifications
+  - Clear all notifications
+  - Pull-to-refresh support
+  - Color-coded by type
+- **Notification Handlers:**
+  - Foreground notification display
+  - Background notification processing
+  - Notification tap navigation
+  - Deep linking to relevant screens
+- **Settings Integration:**
+  - Enable/disable push notifications
+  - View notification history
+  - Push token management
+  - Sync with app store
+- **Analytics Integration:**
+  - Permission granted/denied tracking
+  - Notification received events
+  - Notification opened events
+  - Notification dismissed events
+- **Database Integration:**
+  - Push tokens stored in members table
+  - Token cleanup on disable
+  - Migration script provided
 
 ---
 
@@ -520,13 +564,8 @@ export const MemberPermissions = {
 
 ## Known Limitations & Future Work
 
-### Not Yet Implemented (69 SP remaining)
-1. **Notifications (EPIC 14 - 19 SP):**
-   - Push notifications
-   - In-app notification center
-   - Notification preferences
-
-2. **Additional Features:**
+### Not Yet Implemented (50 SP remaining)
+1. **Additional Features:**
    - Recurring tasks
    - File attachments for tasks
    - Calendar view
@@ -629,5 +668,5 @@ This project was developed with assistance from Claude (Anthropic) as an AI pair
 ---
 
 **Last Updated:** 2025-01-23
-**Version:** 0.8.2 (82.2% complete)
-**Total Commits:** 27
+**Version:** 0.8.7 (87.1% complete)
+**Total Commits:** 29
