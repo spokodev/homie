@@ -55,6 +55,8 @@ export const ANALYTICS_EVENTS = {
   // Funnel Events
   ONBOARDING_STARTED: 'onboarding_started',
   HOUSEHOLD_CREATED: 'household_created',
+  HOUSEHOLD_UPDATED: 'household_updated',
+  HOUSEHOLD_DELETED: 'household_deleted',
   MEMBER_ADDED: 'member_added',
   PREMIUM_UPGRADE_VIEWED: 'premium_upgrade_viewed',
   PREMIUM_UPGRADE_CLICKED: 'premium_upgrade_clicked',

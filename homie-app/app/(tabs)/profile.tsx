@@ -233,6 +233,16 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.menuItem}
+            onPress={() => router.push('/(modals)/household-settings')}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="home-outline" size={20} color={Colors.primary} />
+              <Text style={styles.menuItemText}>Household Settings</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuItem}
             onPress={() => router.push('/(modals)/settings')}
           >
             <View style={styles.menuItemLeft}>
