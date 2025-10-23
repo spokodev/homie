@@ -10,15 +10,48 @@ export interface ValidationResult {
 
 /**
  * Email validation using RFC 5322 compliant regex
+ * Validates:
+ * - Proper email structure (local@domain.tld)
+ * - No consecutive dots
+ * - Valid characters in local and domain parts
+ * - Proper TLD (2+ characters)
  */
 export function validateEmail(email: string): ValidationResult {
   if (!email || email.trim().length === 0) {
     return { isValid: false, error: 'Email is required' };
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email.trim())) {
+  const trimmed = email.trim().toLowerCase();
+
+  // Check length constraints
+  if (trimmed.length > 254) {
+    return { isValid: false, error: 'Email is too long (max 254 characters)' };
+  }
+
+  // RFC 5322 compliant regex with additional checks
+  const emailRegex = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+
+  if (!emailRegex.test(trimmed)) {
     return { isValid: false, error: 'Please enter a valid email address' };
+  }
+
+  // Additional checks for common mistakes
+  const [localPart, domainPart] = trimmed.split('@');
+
+  // Check local part length (max 64 characters per RFC)
+  if (localPart.length > 64) {
+    return { isValid: false, error: 'Email local part is too long' };
+  }
+
+  // Check for consecutive dots
+  if (trimmed.includes('..')) {
+    return { isValid: false, error: 'Email cannot contain consecutive dots' };
+  }
+
+  // Check for valid TLD (at least 2 characters)
+  const tld = domainPart.split('.').pop();
+  if (!tld || tld.length < 2) {
+    return { isValid: false, error: 'Please enter a valid email domain' };
   }
 
   return { isValid: true };
