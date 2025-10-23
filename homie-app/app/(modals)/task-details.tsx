@@ -13,8 +13,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { useCompleteTask, useDeleteTask, Task } from '@/hooks/useTasks';
+import { useCompleteTask, useDeleteTask, useUpdateTask, Task } from '@/hooks/useTasks';
 import { useHousehold } from '@/contexts/HouseholdContext';
+import { useMembers } from '@/hooks/useMembers';
 import { useToast } from '@/components/Toast';
 import { ConfirmDialog } from '@/components/Modal/ConfirmDialog';
 import { MemberPermissions } from '@/utils/permissions';
@@ -22,13 +23,16 @@ import { MemberPermissions } from '@/utils/permissions';
 export default function TaskDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ taskId: string }>();
-  const { member } = useHousehold();
+  const { household, member } = useHousehold();
   const { showToast } = useToast();
   const completeTask = useCompleteTask();
   const deleteTask = useDeleteTask();
+  const updateTask = useUpdateTask();
+  const { data: members = [] } = useMembers(household?.id);
   const [completing, setCompleting] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showAssigneeDialog, setShowAssigneeDialog] = useState(false);
 
   // Fetch task details
   const { data: task, isLoading, refetch } = useQuery<Task>({
@@ -117,6 +121,29 @@ export default function TaskDetailsScreen() {
       showToast(error.message || 'Failed to delete task', 'error');
     } finally {
       setShowDeleteDialog(false);
+    }
+  };
+
+  const handleAssignTask = async (assigneeId: string | null) => {
+    if (!task) return;
+
+    try {
+      await updateTask.mutateAsync({
+        taskId: task.id,
+        updates: {
+          assignee_id: assigneeId || undefined,
+        },
+      });
+
+      const assignee = members.find((m) => m.id === assigneeId);
+      showToast(
+        assigneeId ? `Assigned to ${assignee?.name}` : 'Unassigned task',
+        'success'
+      );
+      refetch();
+      setShowAssigneeDialog(false);
+    } catch (error: any) {
+      showToast(error.message || 'Failed to assign task', 'error');
     }
   };
 
@@ -239,15 +266,27 @@ export default function TaskDetailsScreen() {
         </View>
 
         {/* Assignee */}
-        {task.assignee_name && (
-          <View style={styles.section}>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Assigned To</Text>
+            {!isCompleted && (
+              <TouchableOpacity onPress={() => setShowAssigneeDialog(true)}>
+                <Text style={styles.changeButton}>Change</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {task.assignee_name ? (
             <View style={styles.assigneeCard}>
               <Text style={styles.assigneeAvatar}>{task.assignee_avatar || '😊'}</Text>
               <Text style={styles.assigneeName}>{task.assignee_name}</Text>
             </View>
-          </View>
-        )}
+          ) : (
+            <View style={[styles.assigneeCard, styles.unassignedCard]}>
+              <Text style={styles.assigneeAvatar}>❔</Text>
+              <Text style={styles.unassignedText}>Anyone can complete this task</Text>
+            </View>
+          )}
+        </View>
 
         {/* Due Date */}
         {task.due_date && (
@@ -319,6 +358,51 @@ export default function TaskDetailsScreen() {
         icon="trash"
         loading={deleteTask.isPending}
       />
+
+      {/* Assignee Selection Modal */}
+      {showAssigneeDialog && (
+        <View style={styles.assigneeModal}>
+          <View style={styles.assigneeModalContent}>
+            <View style={styles.assigneeModalHeader}>
+              <Text style={styles.assigneeModalTitle}>Assign Task</Text>
+              <TouchableOpacity onPress={() => setShowAssigneeDialog(false)}>
+                <Ionicons name="close" size={24} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.assigneeList}>
+              {/* Unassigned option */}
+              <TouchableOpacity
+                style={styles.assigneeOption}
+                onPress={() => handleAssignTask(null)}
+              >
+                <Text style={styles.assigneeOptionAvatar}>❔</Text>
+                <View style={styles.assigneeOptionInfo}>
+                  <Text style={styles.assigneeOptionName}>Anyone</Text>
+                  <Text style={styles.assigneeOptionDesc}>Unassigned</Text>
+                </View>
+                {!task?.assignee_id && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
+              </TouchableOpacity>
+
+              {/* Member options */}
+              {members.map((m) => (
+                <TouchableOpacity
+                  key={m.id}
+                  style={styles.assigneeOption}
+                  onPress={() => handleAssignTask(m.id)}
+                >
+                  <Text style={styles.assigneeOptionAvatar}>{m.avatar}</Text>
+                  <View style={styles.assigneeOptionInfo}>
+                    <Text style={styles.assigneeOptionName}>{m.name}</Text>
+                    <Text style={styles.assigneeOptionDesc}>{m.type === 'pet' ? 'Pet' : 'Member'}</Text>
+                  </View>
+                  {task?.assignee_id === m.id && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -400,6 +484,17 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: Spacing.sm,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  changeButton: {
+    ...Typography.bodyMedium,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
   descriptionText: {
     ...Typography.bodyLarge,
     color: Colors.textSecondary,
@@ -451,6 +546,68 @@ const styles = StyleSheet.create({
     ...Typography.bodyLarge,
     color: Colors.text,
     fontWeight: '500',
+  },
+  unassignedCard: {
+    borderWidth: 2,
+    borderColor: Colors.gray300,
+    borderStyle: 'dashed',
+  },
+  unassignedText: {
+    ...Typography.bodyMedium,
+    color: Colors.textSecondary,
+  },
+  assigneeModal: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  assigneeModalContent: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: BorderRadius.large,
+    borderTopRightRadius: BorderRadius.large,
+    maxHeight: '80%',
+  },
+  assigneeModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.gray300,
+  },
+  assigneeModalTitle: {
+    ...Typography.h4,
+    color: Colors.text,
+  },
+  assigneeList: {
+    maxHeight: 400,
+  },
+  assigneeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.gray200,
+  },
+  assigneeOptionAvatar: {
+    fontSize: 32,
+    marginRight: Spacing.md,
+  },
+  assigneeOptionInfo: {
+    flex: 1,
+  },
+  assigneeOptionName: {
+    ...Typography.bodyLarge,
+    color: Colors.text,
+    fontWeight: '500',
+  },
+  assigneeOptionDesc: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
   },
   dateCard: {
     flexDirection: 'row',

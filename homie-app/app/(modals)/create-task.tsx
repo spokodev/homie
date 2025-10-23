@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
 import { useCreateTask } from '@/hooks/useTasks';
 import { useHousehold } from '@/contexts/HouseholdContext';
+import { useMembers } from '@/hooks/useMembers';
 import { TextInput } from '@/components/Form/TextInput';
 import { TextArea } from '@/components/Form/TextArea';
 import { useToast } from '@/components/Toast';
@@ -28,11 +29,13 @@ export default function CreateTaskModal() {
   const { household, member } = useHousehold();
   const createTask = useCreateTask();
   const { showToast } = useToast();
+  const { data: members = [] } = useMembers(household?.id);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [room, setRoom] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState('');
+  const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined);
   const [errors, setErrors] = useState<{
     title?: string;
     description?: string;
@@ -101,6 +104,7 @@ export default function CreateTaskModal() {
         description: description.trim() || undefined,
         room: room.trim() || undefined,
         estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes) : undefined,
+        assignee_id: assigneeId || undefined,
         household_id: household.id,
         created_by_member_id: member.id,
       });
@@ -109,7 +113,7 @@ export default function CreateTaskModal() {
       trackTaskEvent(ANALYTICS_EVENTS.TASK_CREATED, {
         points: calculatePoints(estimatedMinutes),
         has_due_date: false,
-        has_assignee: false,
+        has_assignee: !!assigneeId,
         estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes) : undefined,
       });
 
@@ -212,6 +216,59 @@ export default function CreateTaskModal() {
           containerStyle={styles.section}
         />
 
+        {/* Assign To */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Assign To (Optional)</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.assigneeScroll}
+          >
+            {/* Unassigned option */}
+            <TouchableOpacity
+              style={[
+                styles.assigneeOption,
+                assigneeId === undefined && styles.assigneeOptionSelected,
+              ]}
+              onPress={() => setAssigneeId(undefined)}
+              disabled={createTask.isPending}
+            >
+              <Text style={styles.assigneeAvatar}>❔</Text>
+              <Text
+                style={[
+                  styles.assigneeName,
+                  assigneeId === undefined && styles.assigneeNameSelected,
+                ]}
+              >
+                Anyone
+              </Text>
+            </TouchableOpacity>
+
+            {/* Member options */}
+            {members.map((m) => (
+              <TouchableOpacity
+                key={m.id}
+                style={[
+                  styles.assigneeOption,
+                  assigneeId === m.id && styles.assigneeOptionSelected,
+                ]}
+                onPress={() => setAssigneeId(m.id)}
+                disabled={createTask.isPending}
+              >
+                <Text style={styles.assigneeAvatar}>{m.avatar}</Text>
+                <Text
+                  style={[
+                    styles.assigneeName,
+                    assigneeId === m.id && styles.assigneeNameSelected,
+                  ]}
+                >
+                  {m.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
         {/* Info Card */}
         <View style={styles.infoCard}>
           <Text style={styles.infoIcon}>💡</Text>
@@ -261,6 +318,43 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: Spacing.md,
+  },
+  label: {
+    ...Typography.bodyMedium,
+    color: Colors.text,
+    fontWeight: '600',
+    marginBottom: Spacing.sm,
+  },
+  assigneeScroll: {
+    marginTop: Spacing.xs,
+  },
+  assigneeOption: {
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.medium,
+    borderWidth: 2,
+    borderColor: Colors.gray300,
+    backgroundColor: Colors.white,
+    marginRight: Spacing.sm,
+    minWidth: 80,
+  },
+  assigneeOptionSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '10',
+  },
+  assigneeAvatar: {
+    fontSize: 32,
+    marginBottom: Spacing.xs,
+  },
+  assigneeName: {
+    ...Typography.bodySmall,
+    color: Colors.text,
+    textAlign: 'center',
+  },
+  assigneeNameSelected: {
+    color: Colors.primary,
+    fontWeight: '600',
   },
   infoCard: {
     flexDirection: 'row',
