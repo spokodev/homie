@@ -150,6 +150,7 @@ export default function HomeScreen() {
         {captainLoading ? (
           <View style={[styles.captainCard, styles.captainCardLoading]}>
             <ActivityIndicator size="small" color={Colors.primary} />
+            <Text style={styles.captainLoadingText}>Loading captain...</Text>
           </View>
         ) : captain ? (
           <View style={styles.captainCard}>
@@ -341,7 +342,7 @@ export default function HomeScreen() {
                 <Text style={styles.taskIcon}>{category?.icon || getTaskIcon(task.room)}</Text>
                 <View style={styles.taskInfo}>
                   <View style={styles.taskTitleRow}>
-                    <Text style={styles.taskTitle}>{task.title}</Text>
+                    <Text style={styles.taskTitle} numberOfLines={2}>{task.title}</Text>
                     {isOverdue && (
                       <View style={styles.overdueIndicator}>
                         <Ionicons name="alert-circle" size={14} color={Colors.error} />
@@ -485,7 +486,13 @@ const styles = StyleSheet.create({
   },
   captainCardLoading: {
     justifyContent: 'center',
+    alignItems: 'center',
     minHeight: 100,
+  },
+  captainLoadingText: {
+    ...Typography.bodyMedium,
+    color: Colors.textSecondary,
+    marginTop: Spacing.sm,
   },
   captainCardEmpty: {
     justifyContent: 'center',
