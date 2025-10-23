@@ -4,7 +4,7 @@
 
 HomieLife is a gamified household task management application built with React Native, Expo, and Supabase. The app helps families organize tasks, track progress, and make household chores fun through points, levels, badges, and weekly captain rotations.
 
-**Progress:** 337 SP / 387 SP (87.1% Complete)
+**Progress:** 352 SP / 387 SP (91.0% Complete)
 **Technology Stack:** React Native 0.74.5, Expo SDK 51, TypeScript, Supabase, React Query
 
 ---
@@ -208,6 +208,47 @@ HomieLife is a gamified household task management application built with React N
   - Push tokens stored in members table
   - Token cleanup on disable
   - Migration script provided
+
+### 10. Recurring Tasks System ✅ (15 SP)
+- **Recurrence Patterns:**
+  - Daily recurrence (every N days)
+  - Weekly recurrence (select specific days)
+  - Monthly recurrence (specific day of month)
+  - Flexible interval configuration
+- **End Conditions:**
+  - End after N occurrences
+  - End on specific date
+  - Run indefinitely
+- **Task Template:**
+  - All standard task fields (title, description, category, room)
+  - Assignee configuration
+  - Estimated time and auto-calculated points
+  - Category and room support
+- **Management Features:**
+  - Pause/resume recurring tasks
+  - Delete recurring tasks
+  - View next occurrence time
+  - Track generation statistics
+  - Manual "Generate Now" trigger
+- **Auto-Generation:**
+  - Automatic task creation on app start
+  - Checks for due recurring tasks
+  - Creates task instances based on templates
+  - Updates next occurrence automatically
+  - Deactivates when no more occurrences
+- **User Interface:**
+  - Comprehensive creation form with live preview
+  - Day-of-week multi-select for weekly tasks
+  - Human-readable recurrence descriptions
+  - Visual status indicators (active/paused)
+  - Empty state with quick creation
+  - Settings integration for easy access
+- **Technical Implementation:**
+  - Sophisticated date calculation algorithms
+  - JSONB storage for recurrence rules
+  - React Query integration
+  - Optimistic UI updates
+  - Type-safe recurrence rules
 
 ---
 
@@ -564,12 +605,12 @@ export const MemberPermissions = {
 
 ## Known Limitations & Future Work
 
-### Not Yet Implemented (50 SP remaining)
+### Not Yet Implemented (35 SP remaining)
 1. **Additional Features:**
-   - Recurring tasks
    - File attachments for tasks
    - Calendar view
    - Task templates customization
+   - Advanced reporting and insights
 
 3. **Backend Automation:**
    - Captain rotation cron job (currently manual)
@@ -668,5 +709,5 @@ This project was developed with assistance from Claude (Anthropic) as an AI pair
 ---
 
 **Last Updated:** 2025-01-23
-**Version:** 0.8.7 (87.1% complete)
-**Total Commits:** 29
+**Version:** 0.9.1 (91.0% complete)
+**Total Commits:** 31
