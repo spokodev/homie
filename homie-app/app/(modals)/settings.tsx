@@ -14,15 +14,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
 import { useAppStore } from '@/stores/app.store';
 import { useHousehold } from '@/contexts/HouseholdContext';
+import { useNotifications } from '@/hooks/useNotifications';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { household } = useHousehold();
   const { notificationsEnabled, setNotificationsEnabled } = useAppStore();
+  const { enableNotifications, disableNotifications } = useNotifications();
 
-  const handleNotificationToggle = (value: boolean) => {
+  const handleNotificationToggle = async (value: boolean) => {
     setNotificationsEnabled(value);
-    // TODO: Register/unregister for push notifications
+    if (value) {
+      await enableNotifications();
+    } else {
+      await disableNotifications();
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -62,6 +68,16 @@ export default function SettingsScreen() {
         {/* Notifications Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Notifications</Text>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/(modals)/notifications')}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="list-outline" size={20} color={Colors.primary} />
+              <Text style={styles.menuItemText}>View Notifications</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
+          </TouchableOpacity>
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
               <Ionicons name="notifications-outline" size={20} color={Colors.primary} />

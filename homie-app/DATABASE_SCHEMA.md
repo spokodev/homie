@@ -85,6 +85,9 @@ CREATE TABLE members (
   times_captain INTEGER DEFAULT 0,
   captain_average_rating DECIMAL(3,2),
 
+  -- Notifications
+  push_token TEXT,
+
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
 
@@ -95,6 +98,7 @@ CREATE TABLE members (
 **Fields:**
 - `times_captain`: Total times member has been captain
 - `captain_average_rating`: Lifetime average captain rating
+- `push_token`: Expo push notification token for this member
 
 **Indexes:**
 ```sql
@@ -410,6 +414,10 @@ ALTER TABLE members
 CREATE TABLE IF NOT EXISTS captain_ratings (
   -- (see schema above)
 );
+
+-- Add push_token field for notifications (v0.8.2)
+ALTER TABLE members
+  ADD COLUMN IF NOT EXISTS push_token TEXT;
 ```
 
 ---

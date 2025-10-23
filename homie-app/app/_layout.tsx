@@ -12,6 +12,7 @@ import { HouseholdProvider } from '@/contexts/HouseholdContext';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { initializeAnalytics } from '@/utils/analytics';
+import { useNotifications } from '@/hooks/useNotifications';
 
 // Initialize Sentry
 Sentry.init({
@@ -44,6 +45,7 @@ const queryClient = new QueryClient({
 
 function NavigationContent() {
   useProtectedRoute(); // Protect routes based on auth state
+  useNotifications(); // Initialize notification listeners
 
   return (
     <>
@@ -97,6 +99,13 @@ function NavigationContent() {
         />
         <Stack.Screen
           name="(modals)/settings"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="(modals)/notifications"
           options={{
             presentation: 'modal',
             animation: 'slide_from_bottom',

@@ -52,6 +52,13 @@ export const ANALYTICS_EVENTS = {
   NOTIFICATIONS_TOGGLED: 'notifications_toggled',
   THEME_CHANGED: 'theme_changed',
 
+  // Notification Events
+  NOTIFICATION_PERMISSION_GRANTED: 'notification_permission_granted',
+  NOTIFICATION_PERMISSION_DENIED: 'notification_permission_denied',
+  NOTIFICATION_RECEIVED: 'notification_received',
+  NOTIFICATION_OPENED: 'notification_opened',
+  NOTIFICATION_DISMISSED: 'notification_dismissed',
+
   // Funnel Events
   ONBOARDING_STARTED: 'onboarding_started',
   HOUSEHOLD_CREATED: 'household_created',
