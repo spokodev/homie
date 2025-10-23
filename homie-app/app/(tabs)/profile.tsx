@@ -9,6 +9,8 @@ import { useHousehold } from '@/contexts/HouseholdContext';
 import { useMembers } from '@/hooks/useMembers';
 import { useTasks } from '@/hooks/useTasks';
 import { calculateLevel, getLevelTitle, getLevelColor } from '@/utils/gamification';
+import { useGroupedBadges, useBadgeStats } from '@/hooks/useBadges';
+import { usePremiumStore } from '@/stores/premium.store';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -17,6 +19,11 @@ export default function ProfileScreen() {
   const { data: allMembers = [] } = useMembers(household?.id);
   const { data: allTasks = [] } = useTasks(household?.id);
   const [loading, setLoading] = useState(false);
+  const isPremium = usePremiumStore((state) => state.isPremium);
+
+  // Badges
+  const { earned, locked } = useGroupedBadges(member?.id, isPremium);
+  const { earnedCount, totalCount } = useBadgeStats(member?.id, isPremium);
 
   // Calculate stats
   const level = member ? calculateLevel(member.points) : 1;
@@ -116,6 +123,62 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Badges Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>My Badges</Text>
+            <Text style={styles.badgeCount}>{earnedCount}/{totalCount}</Text>
+          </View>
+
+          {earned.length > 0 && (
+            <>
+              <Text style={styles.badgesSubtitle}>Earned</Text>
+              <View style={styles.badgesGrid}>
+                {earned.slice(0, 6).map((badge) => (
+                  <View key={badge.id} style={styles.badgeItem}>
+                    <View style={[styles.badgeIconContainer, styles.badgeEarned]}>
+                      <Text style={styles.badgeIconLarge}>{badge.icon}</Text>
+                    </View>
+                    <Text style={styles.badgeName} numberOfLines={1}>{badge.name}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+
+          {locked.length > 0 && (
+            <>
+              <Text style={styles.badgesSubtitle}>Locked</Text>
+              <View style={styles.badgesGrid}>
+                {locked.slice(0, 6).map((badge) => (
+                  <View key={badge.id} style={styles.badgeItem}>
+                    <View style={[styles.badgeIconContainer, styles.badgeLocked]}>
+                      <Text style={[styles.badgeIconLarge, styles.badgeIconGray]}>{badge.icon}</Text>
+                      <Ionicons
+                        name="lock-closed"
+                        size={16}
+                        color={Colors.text}
+                        style={styles.lockIcon}
+                      />
+                    </View>
+                    <Text style={[styles.badgeName, styles.badgeNameGray]} numberOfLines={1}>
+                      {badge.name}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+
+          {earnedCount === 0 && (
+            <View style={styles.noBadges}>
+              <Ionicons name="trophy-outline" size={48} color={Colors.textSecondary} />
+              <Text style={styles.noBadgesText}>No badges earned yet</Text>
+              <Text style={styles.noBadgesHint}>Complete tasks to earn your first badge!</Text>
+            </View>
+          )}
+        </View>
+
         {/* Menu Items */}
         <View style={styles.section}>
           <TouchableOpacity
@@ -135,15 +198,6 @@ export default function ProfileScreen() {
             <View style={styles.menuItemLeft}>
               <Ionicons name="settings-outline" size={20} color={Colors.primary} />
               <Text style={styles.menuItemText}>Settings</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} disabled>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="trophy-outline" size={20} color={Colors.gray400} />
-              <Text style={[styles.menuItemText, { color: Colors.gray400 }]}>
-                My Badges (Coming Soon)
-              </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
           </TouchableOpacity>
@@ -312,5 +366,91 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     ...Typography.button,
     color: Colors.white,
+  },
+  // Badges styles
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  badgeCount: {
+    ...Typography.bodyLarge,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  badgesSubtitle: {
+    ...Typography.labelMedium,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  badgesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+  },
+  badgeItem: {
+    width: '30%',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  badgeIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+    position: 'relative',
+  },
+  badgeEarned: {
+    backgroundColor: Colors.accent + '20',
+    borderWidth: 2,
+    borderColor: Colors.accent,
+  },
+  badgeLocked: {
+    backgroundColor: Colors.gray300,
+    borderWidth: 2,
+    borderColor: Colors.text,
+    opacity: 0.5,
+  },
+  badgeIconLarge: {
+    fontSize: 32,
+  },
+  badgeIconGray: {
+    opacity: 0.6,
+  },
+  lockIcon: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: Colors.white,
+    borderRadius: 8,
+    padding: 2,
+  },
+  badgeName: {
+    ...Typography.bodySmall,
+    color: Colors.text,
+    textAlign: 'center',
+    fontSize: 11,
+  },
+  badgeNameGray: {
+    color: Colors.textSecondary,
+  },
+  noBadges: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxl,
+  },
+  noBadgesText: {
+    ...Typography.bodyLarge,
+    color: Colors.textSecondary,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xs,
+  },
+  noBadgesHint: {
+    ...Typography.bodyMedium,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
 });
