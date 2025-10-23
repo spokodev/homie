@@ -14,9 +14,7 @@ import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/theme';
 import { useMyTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/contexts/AuthContext';
-
-// TODO: Replace with actual household ID from context
-const TEMP_HOUSEHOLD_ID = 'temp-household-id';
+import { useHousehold } from '@/contexts/HouseholdContext';
 
 // Dummy captain data (will be implemented in EPIC 7)
 const currentCaptain = {
@@ -35,7 +33,11 @@ const stats = {
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { data: tasks = [], isLoading, refetch, isRefetching } = useMyTasks(TEMP_HOUSEHOLD_ID);
+  const { household, member } = useHousehold();
+  const { data: tasks = [], isLoading, refetch, isRefetching } = useMyTasks(
+    household?.id,
+    member?.id
+  );
 
   const handleCreateTask = () => {
     router.push('/(modals)/create-task');
@@ -82,7 +84,7 @@ export default function HomeScreen() {
           <View>
             <Text style={styles.greeting}>Welcome back! 👋</Text>
             <Text style={styles.householdName}>
-              {user?.user_metadata?.full_name || 'User'}
+              {household?.name || 'Loading...'}
             </Text>
           </View>
           <TouchableOpacity style={styles.settingsButton}>

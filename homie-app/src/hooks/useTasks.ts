@@ -29,6 +29,7 @@ export interface CreateTaskInput {
   due_date?: string;
   estimated_minutes?: number;
   household_id: string;
+  created_by_member_id: string; // Member ID who creates the task
 }
 
 export interface UpdateTaskInput {
@@ -133,12 +134,9 @@ export function useMyTasks(householdId?: string, memberId?: string) {
  */
 export function useCreateTask() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (input: CreateTaskInput) => {
-      if (!user) throw new Error('User not authenticated');
-
       // Calculate points: 5 minutes = 1 point
       const points = input.estimated_minutes
         ? Math.ceil(input.estimated_minutes / 5)
@@ -147,9 +145,15 @@ export function useCreateTask() {
       const { data, error } = await supabase
         .from('tasks')
         .insert({
-          ...input,
+          household_id: input.household_id,
+          title: input.title,
+          description: input.description,
+          room_id: input.room, // Note: This will be null for now since we use text room, not room_id
+          assignee_id: input.assignee_id,
+          due_date: input.due_date,
+          estimated_minutes: input.estimated_minutes,
           points,
-          created_by: user.id,
+          created_by: input.created_by_member_id,
           status: 'pending',
         })
         .select()

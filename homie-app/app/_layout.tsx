@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Colors } from '@/theme';
 import { usePremiumStore } from '@/stores/premium.store';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { HouseholdProvider } from '@/contexts/HouseholdContext';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 
 // Keep the splash screen visible while we fetch resources
@@ -87,7 +88,9 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
-          <NavigationContent />
+          <HouseholdProvider>
+            <NavigationContent />
+          </HouseholdProvider>
         </QueryClientProvider>
       </AuthProvider>
     </GestureHandlerRootView>

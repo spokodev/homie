@@ -1,5 +1,6 @@
 # Credentials and secrets
 CREDENTIALS.md
+GRANT-ACCESS.md
 .env*.local
 .env.local
 .env

@@ -13,12 +13,11 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
 import { useCreateTask } from '@/hooks/useTasks';
-
-// TODO: Replace with actual household ID from context/storage
-const TEMP_HOUSEHOLD_ID = 'temp-household-id';
+import { useHousehold } from '@/contexts/HouseholdContext';
 
 export default function CreateTaskModal() {
   const router = useRouter();
+  const { household, member } = useHousehold();
   const createTask = useCreateTask();
 
   const [title, setTitle] = useState('');
@@ -46,13 +45,19 @@ export default function CreateTaskModal() {
   const handleCreate = async () => {
     if (!validateForm()) return;
 
+    if (!household || !member) {
+      Alert.alert('Error', 'No household or member found. Please complete onboarding.');
+      return;
+    }
+
     try {
       await createTask.mutateAsync({
         title: title.trim(),
         description: description.trim() || undefined,
         room: room.trim() || undefined,
         estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes) : undefined,
-        household_id: TEMP_HOUSEHOLD_ID,
+        household_id: household.id,
+        created_by_member_id: member.id,
       });
 
       Alert.alert('Success', 'Task created successfully!');
