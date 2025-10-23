@@ -110,7 +110,7 @@ export function useCreateRoom() {
       if (error) throw error;
       return data as Room;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Invalidate rooms queries
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
     },

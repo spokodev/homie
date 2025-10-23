@@ -189,7 +189,6 @@ export function useTogglePinNote() {
   return useMutation({
     mutationFn: async ({
       id,
-      roomId,
       isPinned,
     }: {
       id: string;
@@ -202,7 +201,7 @@ export function useTogglePinNote() {
         .eq('id', id);
 
       if (error) throw error;
-      return { id, roomId, isPinned };
+      return { id, isPinned };
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY, variables.roomId] });
