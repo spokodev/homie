@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,9 @@ import { useHousehold } from '@/contexts/HouseholdContext';
 import { useTasksRealtime, useMembersRealtime } from '@/hooks/useRealtimeSubscription';
 import { useMembers } from '@/hooks/useMembers';
 import { useCaptain } from '@/hooks/useCaptain';
+import { TASK_CATEGORIES, TaskCategoryId } from '@/constants';
+
+type SortOption = 'due_date' | 'points' | 'alphabetical';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -30,6 +33,10 @@ export default function HomeScreen() {
   const { data: allMembers = [] } = useMembers(household?.id);
   const { data: captain, isLoading: captainLoading } = useCaptain(household?.id);
 
+  // Filter and sort states
+  const [selectedCategory, setSelectedCategory] = useState<TaskCategoryId | 'all'>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('due_date');
+
   // Real-time subscriptions
   useTasksRealtime(household?.id);
   useMembersRealtime(household?.id);
@@ -40,6 +47,41 @@ export default function HomeScreen() {
     streak: member?.streak_days || 0,
     rank: member ? allMembers.findIndex(m => m.id === member.id) + 1 : 0,
   };
+
+  // Filter and sort tasks
+  const filteredAndSortedTasks = useMemo(() => {
+    let filtered = [...tasks];
+
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(task => task.category === selectedCategory);
+    }
+
+    // Sort tasks
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'due_date':
+          if (!a.due_date && !b.due_date) return 0;
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        case 'points':
+          return (b.points || 0) - (a.points || 0);
+        case 'alphabetical':
+          return a.title.localeCompare(b.title);
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+  }, [tasks, selectedCategory, sortBy]);
+
+  // Check for overdue tasks
+  const overdueTasks = useMemo(() => {
+    const now = new Date();
+    return tasks.filter(task => task.due_date && new Date(task.due_date) < now);
+  }, [tasks]);
 
   const handleCreateTask = () => {
     router.push('/(modals)/create-task');
@@ -162,28 +204,162 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Overdue Badge */}
+          {overdueTasks.length > 0 && (
+            <View style={styles.overdueContainer}>
+              <View style={styles.overdueBadge}>
+                <Ionicons name="alert-circle" size={16} color={Colors.error} />
+                <Text style={styles.overdueText}>
+                  {overdueTasks.length} overdue task{overdueTasks.length > 1 ? 's' : ''}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Category Filters */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filtersScroll}
+            contentContainerStyle={styles.filtersContent}
+          >
+            <TouchableOpacity
+              style={[
+                styles.filterChip,
+                selectedCategory === 'all' && styles.filterChipActive,
+              ]}
+              onPress={() => setSelectedCategory('all')}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  selectedCategory === 'all' && styles.filterChipTextActive,
+                ]}
+              >
+                All
+              </Text>
+            </TouchableOpacity>
+            {TASK_CATEGORIES.map((category) => (
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.filterChip,
+                  selectedCategory === category.id && styles.filterChipActive,
+                  selectedCategory === category.id && { borderColor: category.color },
+                ]}
+                onPress={() => setSelectedCategory(category.id)}
+              >
+                <Text style={styles.filterChipIcon}>{category.icon}</Text>
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    selectedCategory === category.id && styles.filterChipTextActive,
+                  ]}
+                >
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Sort Options */}
+          <View style={styles.sortContainer}>
+            <Text style={styles.sortLabel}>Sort by:</Text>
+            <TouchableOpacity
+              style={[styles.sortButton, sortBy === 'due_date' && styles.sortButtonActive]}
+              onPress={() => setSortBy('due_date')}
+            >
+              <Text
+                style={[
+                  styles.sortButtonText,
+                  sortBy === 'due_date' && styles.sortButtonTextActive,
+                ]}
+              >
+                Due Date
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.sortButton, sortBy === 'points' && styles.sortButtonActive]}
+              onPress={() => setSortBy('points')}
+            >
+              <Text
+                style={[
+                  styles.sortButtonText,
+                  sortBy === 'points' && styles.sortButtonTextActive,
+                ]}
+              >
+                Points
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.sortButton, sortBy === 'alphabetical' && styles.sortButtonActive]}
+              onPress={() => setSortBy('alphabetical')}
+            >
+              <Text
+                style={[
+                  styles.sortButtonText,
+                  sortBy === 'alphabetical' && styles.sortButtonTextActive,
+                ]}
+              >
+                A-Z
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={Colors.primary} />
             </View>
-          ) : tasks.length === 0 ? (
-            renderEmptyState()
+          ) : filteredAndSortedTasks.length === 0 ? (
+            selectedCategory !== 'all' ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyIcon}>🔍</Text>
+                <Text style={styles.emptyTitle}>No tasks in this category</Text>
+                <Text style={styles.emptyText}>
+                  Try selecting a different category or create a new task
+                </Text>
+              </View>
+            ) : (
+              renderEmptyState()
+            )
           ) : (
-            tasks.map((task) => (
+            filteredAndSortedTasks.map((task) => {
+              const isOverdue = task.due_date && new Date(task.due_date) < new Date();
+              const category = TASK_CATEGORIES.find(c => c.id === task.category);
+              return (
               <TouchableOpacity
                 key={task.id}
-                style={styles.taskCard}
+                style={[
+                  styles.taskCard,
+                  isOverdue && styles.taskCardOverdue,
+                ]}
                 onPress={() => router.push(`/(modals)/task-details?taskId=${task.id}`)}
               >
-                <Text style={styles.taskIcon}>{getTaskIcon(task.room)}</Text>
+                <Text style={styles.taskIcon}>{category?.icon || getTaskIcon(task.room)}</Text>
                 <View style={styles.taskInfo}>
-                  <Text style={styles.taskTitle}>{task.title}</Text>
+                  <View style={styles.taskTitleRow}>
+                    <Text style={styles.taskTitle}>{task.title}</Text>
+                    {isOverdue && (
+                      <View style={styles.overdueIndicator}>
+                        <Ionicons name="alert-circle" size={14} color={Colors.error} />
+                      </View>
+                    )}
+                  </View>
                   <View style={styles.taskMeta}>
+                    {category && (
+                      <View style={[styles.categoryBadge, { backgroundColor: category.color + '20' }]}>
+                        <Text style={[styles.categoryBadgeText, { color: category.color }]}>
+                          {category.name}
+                        </Text>
+                      </View>
+                    )}
                     {task.room && (
                       <Text style={styles.taskRoom}>{task.room}</Text>
                     )}
                     {task.due_date && (
-                      <Text style={styles.taskTime}>{formatTime(task.due_date)}</Text>
+                      <Text style={[styles.taskTime, isOverdue && styles.taskTimeOverdue]}>
+                        {formatTime(task.due_date)}
+                      </Text>
                     )}
                   </View>
                 </View>
@@ -191,7 +367,8 @@ export default function HomeScreen() {
                   <Text style={styles.taskPointsText}>{task.points} pts</Text>
                 </View>
               </TouchableOpacity>
-            ))
+            );
+            })
           )}
         </View>
 
@@ -454,5 +631,113 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.large,
+  },
+  // Filters and Sorting
+  overdueContainer: {
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
+  overdueBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.error + '15',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    alignSelf: 'flex-start',
+    gap: Spacing.xs,
+  },
+  overdueText: {
+    ...Typography.labelMedium,
+    color: Colors.error,
+    fontWeight: '600',
+  },
+  filtersScroll: {
+    marginBottom: Spacing.md,
+  },
+  filtersContent: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 2,
+    borderColor: Colors.gray300,
+    backgroundColor: Colors.white,
+    gap: Spacing.xs,
+  },
+  filterChipActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '10',
+  },
+  filterChipIcon: {
+    fontSize: 16,
+  },
+  filterChipText: {
+    ...Typography.bodyMedium,
+    color: Colors.text,
+  },
+  filterChipTextActive: {
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  sortLabel: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+  },
+  sortButton: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.small,
+    backgroundColor: Colors.gray300,
+  },
+  sortButtonActive: {
+    backgroundColor: Colors.secondary,
+  },
+  sortButtonText: {
+    ...Typography.labelSmall,
+    color: Colors.text,
+  },
+  sortButtonTextActive: {
+    color: Colors.white,
+    fontWeight: '600',
+  },
+  // Task Card Enhancements
+  taskCardOverdue: {
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.error,
+  },
+  taskTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  overdueIndicator: {
+    marginLeft: Spacing.xs,
+  },
+  categoryBadge: {
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.small,
+    marginRight: Spacing.xs,
+  },
+  categoryBadgeText: {
+    ...Typography.labelSmall,
+    fontWeight: '600',
+  },
+  taskTimeOverdue: {
+    color: Colors.error,
+    fontWeight: '600',
   },
 });
