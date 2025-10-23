@@ -6,6 +6,9 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  Modal,
+  Platform,
+  TextInput as RNTextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,6 +40,8 @@ export default function CreateTaskModal() {
   const [room, setRoom] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState('');
   const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined);
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [errors, setErrors] = useState<{
     title?: string;
     description?: string;
@@ -113,6 +118,7 @@ export default function CreateTaskModal() {
         room: room.trim() || undefined,
         estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes) : undefined,
         assignee_id: assigneeId || undefined,
+        due_date: dueDate?.toISOString() || undefined,
         household_id: household.id,
         created_by_member_id: member.id,
       });
@@ -120,7 +126,7 @@ export default function CreateTaskModal() {
       // Track task created
       trackTaskEvent(ANALYTICS_EVENTS.TASK_CREATED, {
         points: calculatePoints(estimatedMinutes),
-        has_due_date: false,
+        has_due_date: !!dueDate,
         has_assignee: !!assigneeId,
         estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes) : undefined,
       });
@@ -302,6 +308,37 @@ export default function CreateTaskModal() {
           </ScrollView>
         </View>
 
+        {/* Due Date */}
+        <View style={styles.section}>
+          <Text style={styles.label}>Due Date (Optional)</Text>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowDatePicker(true)}
+            disabled={createTask.isPending}
+          >
+            <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
+            <Text style={styles.dateButtonText}>
+              {dueDate
+                ? dueDate.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })
+                : 'Select Date & Time'}
+            </Text>
+            {dueDate && (
+              <TouchableOpacity
+                onPress={() => setDueDate(undefined)}
+                style={styles.clearButton}
+              >
+                <Ionicons name="close-circle" size={20} color={Colors.gray500} />
+              </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+        </View>
+
         {/* Info Card */}
         <View style={styles.infoCard}>
           <Text style={styles.infoIcon}>💡</Text>
@@ -311,6 +348,79 @@ export default function CreateTaskModal() {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Date Time Picker Modal */}
+      {showDatePicker && (
+        <Modal transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Due Date & Time</Text>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Ionicons name="close" size={24} color={Colors.text} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.datePickerContainer}>
+                {/* Quick presets */}
+                <View style={styles.presetsRow}>
+                  <TouchableOpacity
+                    style={styles.presetButton}
+                    onPress={() => {
+                      const date = new Date();
+                      date.setHours(date.getHours() + 2);
+                      setDueDate(date);
+                      setShowDatePicker(false);
+                    }}
+                  >
+                    <Text style={styles.presetButtonText}>In 2 hours</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.presetButton}
+                    onPress={() => {
+                      const date = new Date();
+                      date.setDate(date.getDate() + 1);
+                      date.setHours(9, 0, 0, 0);
+                      setDueDate(date);
+                      setShowDatePicker(false);
+                    }}
+                  >
+                    <Text style={styles.presetButtonText}>Tomorrow 9 AM</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.presetButton}
+                    onPress={() => {
+                      const date = new Date();
+                      date.setDate(date.getDate() + 7);
+                      setDueDate(date);
+                      setShowDatePicker(false);
+                    }}
+                  >
+                    <Text style={styles.presetButtonText}>Next Week</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.orText}>or pick custom date</Text>
+
+                {/* Simple date input */}
+                <RNTextInput
+                  style={styles.dateInput}
+                  placeholder="YYYY-MM-DD HH:MM"
+                  value={dueDate?.toISOString().slice(0, 16).replace('T', ' ') || ''}
+                  editable={false}
+                />
+
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={() => setShowDatePicker(false)}
+                >
+                  <Text style={styles.modalButtonText}>Done</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -441,5 +551,93 @@ const styles = StyleSheet.create({
     color: Colors.text,
     flex: 1,
     lineHeight: 20,
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.medium,
+    borderWidth: 2,
+    borderColor: Colors.gray300,
+    padding: Spacing.md,
+    gap: Spacing.sm,
+  },
+  dateButtonText: {
+    ...Typography.bodyMedium,
+    color: Colors.text,
+    flex: 1,
+  },
+  clearButton: {
+    padding: Spacing.xs,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: BorderRadius.large,
+    borderTopRightRadius: BorderRadius.large,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.gray300,
+  },
+  modalTitle: {
+    ...Typography.h4,
+    color: Colors.text,
+  },
+  datePickerContainer: {
+    padding: Spacing.lg,
+  },
+  presetsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  presetButton: {
+    flex: 1,
+    backgroundColor: Colors.primary + '15',
+    borderRadius: BorderRadius.medium,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    alignItems: 'center',
+  },
+  presetButtonText: {
+    ...Typography.bodyMedium,
+    color: Colors.primary,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  orText: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginVertical: Spacing.md,
+  },
+  dateInput: {
+    backgroundColor: Colors.gray200,
+    borderRadius: BorderRadius.medium,
+    padding: Spacing.md,
+    ...Typography.bodyLarge,
+    color: Colors.text,
+    marginBottom: Spacing.lg,
+  },
+  modalButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.medium,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    ...Typography.bodyLarge,
+    color: Colors.white,
+    fontWeight: '600',
   },
 });
