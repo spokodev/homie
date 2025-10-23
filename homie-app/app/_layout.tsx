@@ -69,6 +69,20 @@ function NavigationContent() {
             animation: 'slide_from_bottom',
           }}
         />
+        <Stack.Screen
+          name="(modals)/edit-profile"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="(modals)/settings"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
       </Stack>
     </>
   );

@@ -2,13 +2,30 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { useHousehold } from '@/contexts/HouseholdContext';
+import { useMembers } from '@/hooks/useMembers';
+import { useTasks } from '@/hooks/useTasks';
+import { calculateLevel, getLevelTitle, getLevelColor } from '@/utils/gamification';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const router = useRouter();
+  const { household, member } = useHousehold();
+  const { data: allMembers = [] } = useMembers(household?.id);
+  const { data: allTasks = [] } = useTasks(household?.id);
   const [loading, setLoading] = useState(false);
+
+  // Calculate stats
+  const level = member ? calculateLevel(member.points) : 1;
+  const levelTitle = getLevelTitle(level);
+  const levelColor = getLevelColor(level);
+  const rank = member ? allMembers.findIndex(m => m.id === member.id) + 1 : 0;
+  const tasksCompleted = allTasks.filter(
+    t => t.status === 'completed' && t.assignee_id === member?.id
+  ).length;
 
   const handleLogout = () => {
     Alert.alert(
@@ -48,13 +65,21 @@ export default function ProfileScreen() {
 
         {/* User Info Card */}
         <View style={styles.card}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatar}>👤</Text>
+          <View style={[styles.avatarContainer, { borderColor: levelColor, borderWidth: 3 }]}>
+            <Text style={styles.avatar}>{member?.avatar || '😊'}</Text>
           </View>
-          <Text style={styles.name}>
-            {user?.user_metadata?.full_name || 'User'}
-          </Text>
-          <Text style={styles.email}>{user?.email}</Text>
+          <Text style={styles.name}>{member?.name || 'Loading...'}</Text>
+          <View style={[styles.levelBadge, { backgroundColor: levelColor }]}>
+            <Ionicons name="star" size={14} color={Colors.white} />
+            <Text style={styles.levelText}>Level {level}</Text>
+          </View>
+          <Text style={styles.levelTitle}>{levelTitle}</Text>
+          {member?.role === 'admin' && (
+            <View style={styles.adminBadge}>
+              <Ionicons name="shield-checkmark" size={14} color={Colors.white} />
+              <Text style={styles.adminText}>Admin</Text>
+            </View>
+          )}
         </View>
 
         {/* Stats Section */}
@@ -62,33 +87,65 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>My Stats</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>0</Text>
+              <Ionicons name="star" size={24} color={Colors.accent} />
+              <Text style={styles.statValue}>{member?.points || 0}</Text>
               <Text style={styles.statLabel}>Points</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>0</Text>
-              <Text style={styles.statLabel}>Tasks</Text>
+              <Ionicons name="checkmark-circle" size={24} color={Colors.success} />
+              <Text style={styles.statValue}>{tasksCompleted}</Text>
+              <Text style={styles.statLabel}>Tasks Done</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>0</Text>
+              <Ionicons name="flame" size={24} color={Colors.warning} />
+              <Text style={styles.statValue}>{member?.streak_days || 0}</Text>
               <Text style={styles.statLabel}>Streak</Text>
+            </View>
+          </View>
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}>
+              <Ionicons name="trophy" size={24} color={Colors.primary} />
+              <Text style={styles.statValue}>#{rank || '-'}</Text>
+              <Text style={styles.statLabel}>Rank</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="home" size={24} color={Colors.secondary} />
+              <Text style={styles.statValue}>{household?.icon || '🏠'}</Text>
+              <Text style={styles.statLabel}>{household?.name || 'Loading...'}</Text>
             </View>
           </View>
         </View>
 
         {/* Menu Items */}
         <View style={styles.section}>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>Edit Profile</Text>
-            <Text style={styles.menuItemIcon}>›</Text>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/(modals)/edit-profile')}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="person-outline" size={20} color={Colors.primary} />
+              <Text style={styles.menuItemText}>Edit Profile</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>Settings</Text>
-            <Text style={styles.menuItemIcon}>›</Text>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/(modals)/settings')}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="settings-outline" size={20} color={Colors.primary} />
+              <Text style={styles.menuItemText}>Settings</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>My Badges</Text>
-            <Text style={styles.menuItemIcon}>›</Text>
+          <TouchableOpacity style={styles.menuItem} disabled>
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="trophy-outline" size={20} color={Colors.gray400} />
+              <Text style={[styles.menuItemText, { color: Colors.gray400 }]}>
+                My Badges (Coming Soon)
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
           </TouchableOpacity>
         </View>
 
@@ -153,9 +210,38 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: Spacing.xs,
   },
-  email: {
+  levelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    marginBottom: Spacing.xs,
+    gap: 4,
+  },
+  levelText: {
+    ...Typography.labelMedium,
+    color: Colors.white,
+    fontWeight: '600',
+  },
+  levelTitle: {
     ...Typography.bodyMedium,
     color: Colors.textSecondary,
+    marginBottom: Spacing.xs,
+  },
+  adminBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.small,
+    gap: 4,
+  },
+  adminText: {
+    ...Typography.labelSmall,
+    color: Colors.white,
+    fontWeight: '600',
   },
   section: {
     marginBottom: Spacing.xl,
@@ -168,6 +254,7 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     gap: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   statCard: {
     flex: 1,
@@ -182,13 +269,14 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   statValue: {
-    ...Typography.h2,
-    color: Colors.primary,
-    marginBottom: Spacing.xs,
+    ...Typography.h3,
+    color: Colors.text,
+    marginVertical: Spacing.xs,
   },
   statLabel: {
     ...Typography.bodySmall,
     color: Colors.textSecondary,
+    textAlign: 'center',
   },
   menuItem: {
     flexDirection: 'row',
@@ -204,13 +292,14 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
   menuItemText: {
     ...Typography.bodyLarge,
     color: Colors.text,
-  },
-  menuItemIcon: {
-    fontSize: 24,
-    color: Colors.gray400,
   },
   logoutButton: {
     backgroundColor: Colors.error,
