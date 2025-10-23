@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { calculateLevel } from '@/utils/gamification';
 
 export interface Task {
   id: string;
@@ -234,12 +235,34 @@ export function useCompleteTask() {
 
       if (updateError) throw updateError;
 
-      // Award points to assignee (if assigned)
+      // Award points to assignee (if assigned) and update streak
       if (task.assignee_id) {
+        const assignee = task.assignee;
+        const newPoints = (assignee.points || 0) + task.points;
+        const newLevel = calculateLevel(newPoints);
+
+        // Calculate streak
+        const now = new Date();
+        const lastCompleted = assignee.last_completed_at
+          ? new Date(assignee.last_completed_at)
+          : null;
+
+        let newStreak = 1;
+        if (lastCompleted) {
+          const hoursSinceLastTask = (now.getTime() - lastCompleted.getTime()) / (1000 * 60 * 60);
+          // If within 48 hours, increment streak; otherwise reset to 1
+          if (hoursSinceLastTask <= 48) {
+            newStreak = (assignee.streak_days || 0) + 1;
+          }
+        }
+
         const { error: pointsError } = await supabase
           .from('members')
           .update({
-            points: (task.assignee.points || 0) + task.points,
+            points: newPoints,
+            level: newLevel,
+            streak_days: newStreak,
+            last_completed_at: now.toISOString(),
           })
           .eq('id', task.assignee_id);
 

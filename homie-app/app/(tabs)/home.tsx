@@ -16,19 +16,13 @@ import { useMyTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useTasksRealtime, useMembersRealtime } from '@/hooks/useRealtimeSubscription';
+import { useMembers } from '@/hooks/useMembers';
 
 // Dummy captain data (will be implemented in EPIC 7)
 const currentCaptain = {
   name: 'Mom',
   avatar: '👩',
   daysLeft: 3,
-};
-
-// Dummy stats (will be implemented in EPIC 9)
-const stats = {
-  points: 0,
-  streak: 0,
-  rank: 0,
 };
 
 export default function HomeScreen() {
@@ -39,10 +33,18 @@ export default function HomeScreen() {
     household?.id,
     member?.id
   );
+  const { data: allMembers = [] } = useMembers(household?.id);
 
   // Real-time subscriptions
   useTasksRealtime(household?.id);
   useMembersRealtime(household?.id);
+
+  // Calculate member stats
+  const stats = {
+    points: member?.points || 0,
+    streak: member?.streak_days || 0,
+    rank: member ? allMembers.findIndex(m => m.id === member.id) + 1 : 0,
+  };
 
   const handleCreateTask = () => {
     router.push('/(modals)/create-task');
