@@ -11,6 +11,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { HouseholdProvider } from '@/contexts/HouseholdContext';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { initializeAnalytics } from '@/utils/analytics';
 
 // Initialize Sentry
 Sentry.init({
@@ -22,6 +23,9 @@ Sentry.init({
   enableAutoSessionTracking: true,
   sessionTrackingIntervalMillis: 30000, // 30 seconds
 });
+
+// Initialize PostHog Analytics
+initializeAnalytics();
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();

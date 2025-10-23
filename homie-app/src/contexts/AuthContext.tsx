@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { User, Session } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/react-native';
 import { supabase, auth } from '@/lib/supabase';
+import { identifyUser, resetUser, trackEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 interface AuthContextType {
   user: User | null;
@@ -55,8 +56,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
             email: session.user.email,
             username: session.user.user_metadata?.name || session.user.email,
           });
+
+          // Update PostHog user context
+          identifyUser(session.user.id, {
+            email: session.user.email,
+            name: session.user.user_metadata?.name,
+          });
+
+          // Track login event
+          if (event === 'SIGNED_IN') {
+            trackEvent(ANALYTICS_EVENTS.USER_LOGIN);
+          }
         } else {
           Sentry.setUser(null);
+          resetUser();
         }
       }
     );
@@ -69,6 +82,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signIn = async (email: string, password: string) => {
     try {
       const result = await auth.signIn(email, password);
+      if (!result.error) {
+        trackEvent(ANALYTICS_EVENTS.USER_LOGIN);
+      }
       return result;
     } catch (error) {
       return { error };
@@ -78,6 +94,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signUp = async (email: string, password: string, metadata?: any) => {
     try {
       const result = await auth.signUp(email, password, metadata);
+      if (!result.error) {
+        trackEvent(ANALYTICS_EVENTS.USER_SIGNUP);
+      }
       return result;
     } catch (error) {
       return { error };
@@ -86,9 +105,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = async () => {
     try {
+      trackEvent(ANALYTICS_EVENTS.USER_LOGOUT);
       await auth.signOut();
       setUser(null);
       setSession(null);
+      resetUser();
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;
