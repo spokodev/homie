@@ -15,9 +15,11 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
 import { ERRORS } from '@/constants';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,14 +47,17 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      // TODO: Implement Supabase authentication
-      // For now, simulate login
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const result = await signIn(email.trim(), password);
 
-      // Navigate to main app
+      if (result.error) {
+        Alert.alert('Login Failed', result.error.message || ERRORS.auth.invalidCredentials);
+        return;
+      }
+
+      // Successfully logged in
       router.replace('/(tabs)/home');
-    } catch (error) {
-      Alert.alert('Error', ERRORS.auth.invalidCredentials);
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || ERRORS.auth.invalidCredentials);
     } finally {
       setLoading(false);
     }

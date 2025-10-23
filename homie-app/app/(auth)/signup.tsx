@@ -15,9 +15,11 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
 import { ERRORS } from '@/constants';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignupScreen() {
   const router = useRouter();
+  const { signUp } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -64,14 +66,29 @@ export default function SignupScreen() {
 
     setLoading(true);
     try {
-      // TODO: Implement Supabase signup
-      // For now, simulate signup
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const result = await signUp(email.trim(), password, {
+        full_name: name.trim(),
+      });
 
-      // Navigate to onboarding
+      if (result.error) {
+        Alert.alert('Signup Failed', result.error.message || 'Failed to create account');
+        return;
+      }
+
+      // Check if email confirmation is required
+      if (result.data?.user && !result.data.session) {
+        Alert.alert(
+          'Verify Your Email',
+          'We sent you a confirmation email. Please check your inbox and click the link to verify your account.',
+          [{ text: 'OK', onPress: () => router.replace('/(auth)/login') }]
+        );
+        return;
+      }
+
+      // Successfully signed up and logged in
       router.replace('/(auth)/onboarding');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create account. Please try again.');
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Failed to create account. Please try again.');
     } finally {
       setLoading(false);
     }
