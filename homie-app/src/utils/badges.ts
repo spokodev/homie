@@ -266,7 +266,11 @@ function getCurrentValue(badgeId: string, memberStats: BadgeCriteria): number {
   };
 
   const key = map[badgeId];
-  return key ? (memberStats[key] || 0) : 0;
+  if (!key) return 0;
+
+  const value = memberStats[key];
+  // Only return numeric values, default to 0 for strings or undefined
+  return typeof value === 'number' ? value : 0;
 }
 
 function getTargetValue(badgeId: string): number {
