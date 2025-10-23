@@ -21,6 +21,7 @@ import {
   validateEstimatedMinutes,
   validateRoomName,
 } from '@/utils/validation';
+import { trackTaskEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 export default function CreateTaskModal() {
   const router = useRouter();
@@ -95,13 +96,21 @@ export default function CreateTaskModal() {
     }
 
     try {
-      await createTask.mutateAsync({
+      const task = await createTask.mutateAsync({
         title: title.trim(),
         description: description.trim() || undefined,
         room: room.trim() || undefined,
         estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes) : undefined,
         household_id: household.id,
         created_by_member_id: member.id,
+      });
+
+      // Track task created
+      trackTaskEvent(ANALYTICS_EVENTS.TASK_CREATED, {
+        points: calculatePoints(estimatedMinutes),
+        has_due_date: false,
+        has_assignee: false,
+        estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes) : undefined,
       });
 
       showToast('Task created successfully!', 'success');

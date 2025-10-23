@@ -15,6 +15,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/theme';
 import { APP_CONFIG } from '@/constants';
 import { usePremiumStore } from '@/stores/premium.store';
+import { trackEvent, trackPremiumEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 const FEATURES = [
   { icon: '🏠', title: 'Unlimited Households', free: '1', premium: 'Unlimited' },
@@ -46,6 +47,8 @@ export default function SubscriptionScreen() {
 
   useEffect(() => {
     initialize();
+    // Track premium screen viewed
+    trackEvent(ANALYTICS_EVENTS.PREMIUM_UPGRADE_VIEWED);
   }, []);
 
   useEffect(() => {
@@ -55,11 +58,25 @@ export default function SubscriptionScreen() {
   }, [error]);
 
   const handlePurchase = async () => {
+    // Track upgrade button clicked
+    trackEvent(ANALYTICS_EVENTS.PREMIUM_UPGRADE_CLICKED, {
+      plan: selectedPlan,
+    });
+
     const success = selectedPlan === 'monthly'
       ? await purchaseMonthly()
       : await purchaseYearly();
 
     if (success) {
+      // Track successful purchase
+      trackPremiumEvent(ANALYTICS_EVENTS.PREMIUM_PURCHASE, {
+        plan: selectedPlan,
+        price: selectedPlan === 'monthly'
+          ? APP_CONFIG.pricing.premium.monthly
+          : APP_CONFIG.pricing.premium.yearly,
+        source: 'subscription_screen',
+      });
+
       Alert.alert(
         '🎉 Welcome to Premium!',
         'Thank you for supporting Homie! Enjoy all premium features.',

@@ -46,6 +46,14 @@ export const ANALYTICS_EVENTS = {
   SETTINGS_OPENED: 'settings_opened',
   NOTIFICATIONS_TOGGLED: 'notifications_toggled',
   THEME_CHANGED: 'theme_changed',
+
+  // Funnel Events
+  ONBOARDING_STARTED: 'onboarding_started',
+  HOUSEHOLD_CREATED: 'household_created',
+  MEMBER_ADDED: 'member_added',
+  PREMIUM_UPGRADE_VIEWED: 'premium_upgrade_viewed',
+  PREMIUM_UPGRADE_CLICKED: 'premium_upgrade_clicked',
+  TASK_ASSIGNMENT_STARTED: 'task_assignment_started',
 } as const;
 
 /**

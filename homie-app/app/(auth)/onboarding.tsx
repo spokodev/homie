@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/Toast';
 import { validateHouseholdName, validateMemberName } from '@/utils/validation';
+import { trackEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 const EMOJI_ICONS = ['🏠', '🏡', '🏘️', '🏰', '🏢', '🏛️', '⛺', '🏕️'];
 
@@ -23,6 +24,11 @@ export default function OnboardingScreen() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [step, setStep] = useState(1);
+
+  // Track onboarding start
+  React.useEffect(() => {
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_STARTED);
+  }, []);
 
   // Household data
   const [householdName, setHouseholdName] = useState('');
@@ -92,6 +98,12 @@ export default function OnboardingScreen() {
 
       if (householdError) throw householdError;
 
+      // Track household created
+      trackEvent(ANALYTICS_EVENTS.HOUSEHOLD_CREATED, {
+        household_name: householdName,
+        household_icon: selectedIcon,
+      });
+
       // 2. Create member (household creator)
       const { error: memberError } = await supabase
         .from('members')
@@ -106,12 +118,21 @@ export default function OnboardingScreen() {
 
       if (memberError) throw memberError;
 
+      // Track member added
+      trackEvent(ANALYTICS_EVENTS.MEMBER_ADDED, {
+        member_type: 'human',
+        member_role: 'admin',
+      });
+
       // 3. Store household_id in user metadata
       const { error: updateError } = await supabase.auth.updateUser({
         data: { household_id: household.id },
       });
 
       if (updateError) throw updateError;
+
+      // Track onboarding completed
+      trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED);
 
       // Success! Navigate to home
       showToast('Welcome to HomieLife! 🎉', 'success');

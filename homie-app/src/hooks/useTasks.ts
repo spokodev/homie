@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { calculateLevel } from '@/utils/gamification';
+import { trackTaskEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 export interface Task {
   id: string;
@@ -271,7 +272,15 @@ export function useCompleteTask() {
 
       return { task, pointsAwarded: task.points };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Track task completed
+      trackTaskEvent(ANALYTICS_EVENTS.TASK_COMPLETED, {
+        task_id: data.task.id,
+        points: data.pointsAwarded,
+        status: 'completed',
+        has_assignee: !!data.task.assignee_id,
+      });
+
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ['members'] });
     },
