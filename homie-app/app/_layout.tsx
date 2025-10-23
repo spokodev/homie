@@ -54,6 +54,20 @@ function NavigationContent() {
             animation: 'slide_from_bottom',
           }}
         />
+        <Stack.Screen
+          name="(modals)/task-details"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="(modals)/edit-task"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
       </Stack>
     </>
   );

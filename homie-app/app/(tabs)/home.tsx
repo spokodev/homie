@@ -129,7 +129,11 @@ export default function HomeScreen() {
             renderEmptyState()
           ) : (
             tasks.map((task) => (
-              <TouchableOpacity key={task.id} style={styles.taskCard}>
+              <TouchableOpacity
+                key={task.id}
+                style={styles.taskCard}
+                onPress={() => router.push(`/(modals)/task-details?taskId=${task.id}`)}
+              >
                 <Text style={styles.taskIcon}>{getTaskIcon(task.room)}</Text>
                 <View style={styles.taskInfo}>
                   <Text style={styles.taskTitle}>{task.title}</Text>
