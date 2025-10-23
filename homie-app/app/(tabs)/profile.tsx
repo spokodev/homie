@@ -11,6 +11,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { calculateLevel, getLevelTitle, getLevelColor } from '@/utils/gamification';
 import { useGroupedBadges, useBadgeStats } from '@/hooks/useBadges';
 import { usePremiumStore } from '@/stores/premium.store';
+import { useCaptainStats } from '@/hooks/useCaptain';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -24,6 +25,9 @@ export default function ProfileScreen() {
   // Badges
   const { earned, locked } = useGroupedBadges(member?.id, isPremium);
   const { earnedCount, totalCount } = useBadgeStats(member?.id, isPremium);
+
+  // Captain stats
+  const { data: captainStats } = useCaptainStats(member?.id);
 
   // Calculate stats
   const level = member ? calculateLevel(member.points) : 1;
@@ -122,6 +126,32 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
+
+        {/* Captain Stats Section */}
+        {captainStats && captainStats.times_captain > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Captain Stats</Text>
+              <Ionicons name="crown" size={20} color={Colors.accent} />
+            </View>
+            <View style={styles.captainStatsCard}>
+              <View style={styles.captainStatItem}>
+                <Ionicons name="shield" size={24} color={Colors.primary} />
+                <Text style={styles.captainStatValue}>{captainStats.times_captain}</Text>
+                <Text style={styles.captainStatLabel}>Times Captain</Text>
+              </View>
+              {captainStats.average_rating && (
+                <View style={styles.captainStatItem}>
+                  <Ionicons name="star" size={24} color={Colors.accent} />
+                  <Text style={styles.captainStatValue}>
+                    {captainStats.average_rating.toFixed(1)}
+                  </Text>
+                  <Text style={styles.captainStatLabel}>Avg Rating</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Badges Section */}
         <View style={styles.section}>
@@ -328,6 +358,34 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.xs,
   },
   statLabel: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  captainStatsCard: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.medium,
+    padding: Spacing.lg,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    ...Shadows.small,
+  },
+  captainStatItem: {
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  captainStatValue: {
+    ...Typography.h2,
+    color: Colors.text,
+    fontWeight: '700',
+  },
+  captainStatLabel: {
     ...Typography.bodySmall,
     color: Colors.textSecondary,
     textAlign: 'center',
