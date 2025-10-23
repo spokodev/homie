@@ -22,6 +22,7 @@ export interface Task {
   points: number;
   created_at: string;
   completed_at?: string;
+  recurring_task_id?: string;
 }
 
 export interface CreateTaskInput {
