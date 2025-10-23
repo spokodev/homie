@@ -81,6 +81,31 @@ export default function TaskDetailsScreen() {
     router.push(`/(modals)/edit-task?taskId=${params.taskId}`);
   };
 
+  const handleStartTask = async () => {
+    if (!task) return;
+
+    // Check permission
+    const permission = MemberPermissions.canCompleteTask(member, task.assignee_id);
+    if (!permission.allowed) {
+      showToast(permission.reason || 'Cannot start this task', 'error');
+      return;
+    }
+
+    try {
+      await updateTask.mutateAsync({
+        id: task.id,
+        updates: {
+          status: 'in_progress',
+        },
+      });
+
+      showToast('Task started! 💪', 'success');
+      refetch();
+    } catch (error: any) {
+      showToast(error.message || 'Failed to start task', 'error');
+    }
+  };
+
   const handleComplete = async () => {
     if (!task) return;
 
@@ -253,7 +278,9 @@ export default function TaskDetailsScreen() {
   }
 
   const isCompleted = task.status === 'completed';
-  const canComplete = !isCompleted && (!task.assignee_id || task.assignee_id === member?.id);
+  const isPending = task.status === 'pending';
+  const isInProgress = task.status === 'in_progress';
+  const canInteract = !task.assignee_id || task.assignee_id === member?.id;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -402,7 +429,19 @@ export default function TaskDetailsScreen() {
 
       {/* Action Buttons */}
       <View style={styles.actionsContainer}>
-        {canComplete && (
+        {/* Start Task button - only for pending tasks */}
+        {isPending && canInteract && (
+          <TouchableOpacity
+            style={styles.startButton}
+            onPress={handleStartTask}
+          >
+            <Ionicons name="play-circle" size={20} color={Colors.white} />
+            <Text style={styles.startButtonText}>Start Task</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Complete Task button - only for in_progress tasks */}
+        {isInProgress && canInteract && (
           <TouchableOpacity
             style={styles.completeButton}
             onPress={() => setShowCompleteDialog(true)}
@@ -871,6 +910,19 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.gray200,
     gap: Spacing.sm,
+  },
+  startButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.full,
+    gap: Spacing.sm,
+  },
+  startButtonText: {
+    ...Typography.button,
+    color: Colors.white,
   },
   completeButton: {
     flexDirection: 'row',

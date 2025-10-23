@@ -48,6 +48,7 @@ export default function CreateTaskModal() {
     description?: string;
     room?: string;
     estimatedMinutes?: string;
+    dueDate?: string;
   }>({});
 
   const calculatePoints = (minutes: string) => {
@@ -69,6 +70,7 @@ export default function CreateTaskModal() {
       description?: string;
       room?: string;
       estimatedMinutes?: string;
+      dueDate?: string;
     } = {};
 
     // Validate title
@@ -98,6 +100,15 @@ export default function CreateTaskModal() {
       const minutesValidation = validateEstimatedMinutes(estimatedMinutes);
       if (!minutesValidation.isValid) {
         newErrors.estimatedMinutes = minutesValidation.error;
+      }
+    }
+
+    // Validate due date (optional, but cannot be in the past)
+    if (dueDate) {
+      const now = new Date();
+      const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000); // Allow 5 min buffer
+      if (dueDate < fiveMinutesAgo) {
+        newErrors.dueDate = 'Due date cannot be in the past';
       }
     }
 
@@ -353,7 +364,7 @@ export default function CreateTaskModal() {
         <View style={styles.section}>
           <Text style={styles.label}>Due Date (Optional)</Text>
           <TouchableOpacity
-            style={styles.dateButton}
+            style={[styles.dateButton, errors.dueDate && styles.dateButtonError]}
             onPress={() => setShowDatePicker(true)}
             disabled={createTask.isPending}
           >
@@ -371,13 +382,19 @@ export default function CreateTaskModal() {
             </Text>
             {dueDate && (
               <TouchableOpacity
-                onPress={() => setDueDate(undefined)}
+                onPress={() => {
+                  setDueDate(undefined);
+                  setErrors({ ...errors, dueDate: undefined });
+                }}
                 style={styles.clearButton}
               >
                 <Ionicons name="close-circle" size={20} color={Colors.gray500} />
               </TouchableOpacity>
             )}
           </TouchableOpacity>
+          {errors.dueDate && (
+            <Text style={styles.errorText}>{errors.dueDate}</Text>
+          )}
         </View>
 
         {/* Info Card */}
@@ -625,6 +642,14 @@ const styles = StyleSheet.create({
     borderColor: Colors.gray300,
     padding: Spacing.md,
     gap: Spacing.sm,
+  },
+  dateButtonError: {
+    borderColor: Colors.error,
+  },
+  errorText: {
+    ...Typography.bodySmall,
+    color: Colors.error,
+    marginTop: Spacing.xs,
   },
   dateButtonText: {
     ...Typography.bodyMedium,

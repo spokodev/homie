@@ -343,6 +343,11 @@ export default function HomeScreen() {
                 <View style={styles.taskInfo}>
                   <View style={styles.taskTitleRow}>
                     <Text style={styles.taskTitle} numberOfLines={2}>{task.title}</Text>
+                    {task.recurring_task_id && (
+                      <View style={styles.recurringIndicator}>
+                        <Ionicons name="repeat" size={14} color={Colors.secondary} />
+                      </View>
+                    )}
                     {isOverdue && (
                       <View style={styles.overdueIndicator}>
                         <Ionicons name="alert-circle" size={14} color={Colors.error} />
@@ -732,6 +737,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
+  },
+  recurringIndicator: {
+    marginLeft: Spacing.xs,
   },
   overdueIndicator: {
     marginLeft: Spacing.xs,
