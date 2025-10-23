@@ -23,6 +23,7 @@ import {
   validateRoomName,
 } from '@/utils/validation';
 import { trackTaskEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
+import { TASK_TEMPLATES } from '@/constants';
 
 export default function CreateTaskModal() {
   const router = useRouter();
@@ -46,6 +47,13 @@ export default function CreateTaskModal() {
   const calculatePoints = (minutes: string) => {
     const mins = parseInt(minutes) || 0;
     return Math.ceil(mins / 5);
+  };
+
+  const handleTemplateSelect = (template: typeof TASK_TEMPLATES[number]) => {
+    setTitle(template.title);
+    setEstimatedMinutes(template.minutes.toString());
+    // Clear errors
+    setErrors({});
   };
 
   const validateForm = () => {
@@ -148,6 +156,31 @@ export default function CreateTaskModal() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Quick Templates */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Quick Templates</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.templatesScroll}
+          >
+            {TASK_TEMPLATES.map((template) => (
+              <TouchableOpacity
+                key={template.id}
+                style={styles.templateCard}
+                onPress={() => handleTemplateSelect(template)}
+                disabled={createTask.isPending}
+              >
+                <Text style={styles.templateIcon}>{template.icon}</Text>
+                <Text style={styles.templateTitle}>{template.title}</Text>
+                <Text style={styles.templateMeta}>
+                  {template.minutes} min • {template.points} pts
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
         {/* Title */}
         <TextInput
           label="Title"
@@ -318,6 +351,42 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: Spacing.md,
+  },
+  sectionLabel: {
+    ...Typography.bodyMedium,
+    color: Colors.text,
+    fontWeight: '600',
+    marginBottom: Spacing.sm,
+  },
+  templatesScroll: {
+    marginHorizontal: -Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+  },
+  templateCard: {
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.medium,
+    borderWidth: 2,
+    borderColor: Colors.gray300,
+    padding: Spacing.md,
+    marginRight: Spacing.sm,
+    minWidth: 100,
+  },
+  templateIcon: {
+    fontSize: 32,
+    marginBottom: Spacing.xs,
+  },
+  templateTitle: {
+    ...Typography.bodyMedium,
+    color: Colors.text,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  templateMeta: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
   label: {
     ...Typography.bodyMedium,
