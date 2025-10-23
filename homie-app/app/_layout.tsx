@@ -37,9 +37,15 @@ const queryClient = new QueryClient({
     queries: {
       retry: 2,
       refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes - data is fresh
+      gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache
+      refetchOnMount: true,
+      refetchOnReconnect: true,
+      networkMode: 'online',
     },
     mutations: {
       retry: 1,
+      networkMode: 'online',
     },
   },
 });
