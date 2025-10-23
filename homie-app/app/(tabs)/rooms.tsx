@@ -13,11 +13,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useRooms, Room } from '@/hooks/useRooms';
+import { NetworkErrorView } from '@/components/NetworkErrorView';
 
 export default function RoomsScreen() {
   const router = useRouter();
   const { household } = useHousehold();
-  const { data: rooms = [], isLoading, error } = useRooms(household?.id);
+  const { data: rooms = [], isLoading, error, isError, refetch } = useRooms(household?.id);
 
   const handleAddRoom = () => {
     router.push('/(modals)/add-room');
@@ -61,14 +62,15 @@ export default function RoomsScreen() {
     </View>
   );
 
-  if (error) {
+  // Show error state with retry option
+  if (isError && !isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={48} color={Colors.error} />
-          <Text style={styles.errorText}>Failed to load rooms</Text>
-          <Text style={styles.errorHint}>Please check your connection and try again</Text>
-        </View>
+        <NetworkErrorView
+          onRetry={() => refetch()}
+          message="Failed to load rooms"
+          retrying={false}
+        />
       </SafeAreaView>
     );
   }

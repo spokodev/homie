@@ -13,6 +13,7 @@ import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/theme';
 import { useMembers } from '@/hooks/useMembers';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useMembersRealtime } from '@/hooks/useRealtimeSubscription';
+import { NetworkErrorView } from '@/components/NetworkErrorView';
 import {
   calculateLevel,
   calculateLevelProgress,
@@ -23,7 +24,7 @@ import {
 
 export default function LeaderboardScreen() {
   const { household, member: currentMember } = useHousehold();
-  const { data: members = [], isLoading, refetch, isRefetching } = useMembers(household?.id);
+  const { data: members = [], isLoading, refetch, isRefetching, error, isError } = useMembers(household?.id);
 
   // Real-time updates
   useMembersRealtime(household?.id);
@@ -114,6 +115,19 @@ export default function LeaderboardScreen() {
       </View>
     );
   };
+
+  // Show error state with retry option
+  if (isError && !isLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <NetworkErrorView
+          onRetry={() => refetch()}
+          message="Failed to load leaderboard"
+          retrying={isRefetching}
+        />
+      </SafeAreaView>
+    );
+  }
 
   if (isLoading) {
     return (

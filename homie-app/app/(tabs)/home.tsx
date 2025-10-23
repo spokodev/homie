@@ -19,6 +19,7 @@ import { useTasksRealtime, useMembersRealtime } from '@/hooks/useRealtimeSubscri
 import { useMembers } from '@/hooks/useMembers';
 import { useCaptain } from '@/hooks/useCaptain';
 import { TASK_CATEGORIES, TaskCategoryId } from '@/constants';
+import { NetworkErrorView } from '@/components/NetworkErrorView';
 
 type SortOption = 'due_date' | 'points' | 'alphabetical';
 
@@ -26,7 +27,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { household, member } = useHousehold();
-  const { data: tasks = [], isLoading, refetch, isRefetching } = useMyTasks(
+  const { data: tasks = [], isLoading, refetch, isRefetching, error, isError } = useMyTasks(
     household?.id,
     member?.id
   );
@@ -120,6 +121,19 @@ export default function HomeScreen() {
       </Text>
     </View>
   );
+
+  // Show error state with retry option
+  if (isError && !isLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <NetworkErrorView
+          onRetry={() => refetch()}
+          message="Failed to load your tasks"
+          retrying={isRefetching}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
