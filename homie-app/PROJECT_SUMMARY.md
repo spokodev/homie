@@ -4,7 +4,7 @@
 
 HomieLife is a gamified household task management application built with React Native, Expo, and Supabase. The app helps families organize tasks, track progress, and make household chores fun through points, levels, badges, and weekly captain rotations.
 
-**Progress:** 278 SP / 387 SP (71.8% Complete)
+**Progress:** 318 SP / 387 SP (82.2% Complete)
 **Technology Stack:** React Native 0.74.5, Expo SDK 51, TypeScript, Supabase, React Query
 
 ---
@@ -35,6 +35,29 @@ HomieLife is a gamified household task management application built with React N
   - Assign to pets
   - "Anyone" option for unassigned tasks
   - Reassignment capability
+- **Task Categories (+12 SP):**
+  - 9 predefined categories with icons and colors
+  - Categories: Cleaning, Kitchen, Bathroom, Pet Care, Laundry, Outdoor, Maintenance, Shopping, General
+  - Filter tasks by category with horizontal scrollable chips
+  - Color-coded category badges on task cards
+  - Category display and editing in task details modal
+- **Task Sorting & Filtering (+8 SP):**
+  - Sort by due date (default)
+  - Sort by points (highest first)
+  - Sort alphabetically (A-Z)
+  - Visual indicators for active sort method
+  - Memoized filtering for performance
+- **Overdue Task Management:**
+  - Automatic overdue detection
+  - Badge showing overdue task count
+  - Red left border on overdue task cards
+  - Alert icon next to overdue task titles
+  - Red-colored due date text
+- **Due Date Management:**
+  - Edit due dates with quick presets
+  - Presets: In 2 hours, Tomorrow 9 AM, Next Week
+  - Remove due date capability
+  - Visual indicators on task cards
 - **Points System:**
   - Automatic calculation based on estimated time (5 min = 1 point)
   - Bonus points for speed completion
@@ -258,7 +281,54 @@ homie-app/
 
 ## Key Design Patterns
 
-### 1. Real-time Subscriptions
+### 1. Task Filtering with useMemo
+```typescript
+const filteredAndSortedTasks = useMemo(() => {
+  let filtered = [...tasks];
+
+  // Filter by category
+  if (selectedCategory !== 'all') {
+    filtered = filtered.filter(task => task.category === selectedCategory);
+  }
+
+  // Sort tasks
+  filtered.sort((a, b) => {
+    switch (sortBy) {
+      case 'due_date':
+        if (!a.due_date && !b.due_date) return 0;
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      case 'points':
+        return (b.points || 0) - (a.points || 0);
+      case 'alphabetical':
+        return a.title.localeCompare(b.title);
+      default:
+        return 0;
+    }
+  });
+
+  return filtered;
+}, [tasks, selectedCategory, sortBy]);
+```
+
+### 2. Task Categories System
+```typescript
+// 9 predefined task categories with icons and colors
+export const TASK_CATEGORIES = [
+  { id: 'cleaning', name: 'Cleaning', icon: '🧹', color: '#10B981' },
+  { id: 'kitchen', name: 'Kitchen', icon: '🍳', color: '#F59E0B' },
+  { id: 'bathroom', name: 'Bathroom', icon: '🚿', color: '#3B82F6' },
+  { id: 'pet', name: 'Pet Care', icon: '🐕', color: '#8B5CF6' },
+  { id: 'laundry', name: 'Laundry', icon: '🧺', color: '#EC4899' },
+  { id: 'outdoor', name: 'Outdoor', icon: '🌱', color: '#14B8A6' },
+  { id: 'maintenance', name: 'Maintenance', icon: '🔧', color: '#6B7280' },
+  { id: 'shopping', name: 'Shopping', icon: '🛒', color: '#EF4444' },
+  { id: 'general', name: 'General', icon: '📋', color: '#6366F1' },
+] as const;
+```
+
+### 3. Real-time Subscriptions
 ```typescript
 useEffect(() => {
   const channel = supabase
@@ -450,18 +520,17 @@ export const MemberPermissions = {
 
 ## Known Limitations & Future Work
 
-### Not Yet Implemented (109 SP remaining)
+### Not Yet Implemented (69 SP remaining)
 1. **Notifications (EPIC 14 - 19 SP):**
    - Push notifications
    - In-app notification center
    - Notification preferences
 
 2. **Additional Features:**
-   - Due dates for tasks
    - Recurring tasks
-   - Task categories/tags
-   - File attachments
+   - File attachments for tasks
    - Calendar view
+   - Task templates customization
 
 3. **Backend Automation:**
    - Captain rotation cron job (currently manual)
@@ -560,5 +629,5 @@ This project was developed with assistance from Claude (Anthropic) as an AI pair
 ---
 
 **Last Updated:** 2025-01-23
-**Version:** 0.7.2 (71.8% complete)
-**Total Commits:** 25
+**Version:** 0.8.2 (82.2% complete)
+**Total Commits:** 27
