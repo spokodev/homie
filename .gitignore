@@ -1,0 +1,19 @@
+# Credentials and secrets
+CREDENTIALS.md
+.env*.local
+.env.local
+.env
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# IDE
+.idea
+.vscode
+
+# Temporary
+tmp/
+temp/

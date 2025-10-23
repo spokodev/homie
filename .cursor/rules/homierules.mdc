@@ -1,0 +1,563 @@
+# Homie App - Project Rules & AI Coding Guidelines
+
+## Project Overview
+Homie is a React Native (Expo) household management gamification app that transforms chores into a fun family game with weekly peer ratings.
+
+## Core Principles
+- **Mobile-first**: Optimize for iOS (Android later)
+- **Real-time**: Use Supabase subscriptions for instant updates
+- **Offline-first**: Queue actions when offline, sync when connected
+- **Optimistic UI**: Update UI immediately, sync in background
+- **Type-safe**: Full TypeScript with strict mode
+- **Performance**: Target 60fps animations, <2s app launch
+
+## Tech Stack Requirements
+ALWAYS use these specific versions and libraries:
+```json
+{
+  "expo": "~51.0.0",
+  "react-native": "0.74.0",
+  "typescript": "~5.3.0",
+  "supabase-js": "^2.39.0",
+  "zustand": "^4.5.0",
+  "@tanstack/react-query": "^5.0.0",
+  "react-native-reanimated": "~3.10.0",
+  "expo-router": "~3.5.0"
+}
+```
+
+## Project Structure
+```
+/
+├── app/                    # Expo Router screens
+│   ├── (auth)/            # Auth flow screens
+│   ├── (tabs)/            # Main app with tab navigation
+│   └── _layout.tsx        # Root layout with providers
+├── src/
+│   ├── components/        # Reusable UI components
+│   │   ├── ui/           # Base components (Button, Card, Input)
+│   │   ├── features/     # Feature components (TaskCard, RatingStars)
+│   │   └── layout/       # Layout components (Header, TabBar)
+│   ├── hooks/            # Custom React hooks
+│   ├── lib/              # Utilities and helpers
+│   │   ├── supabase.ts   # Supabase client singleton
+│   │   └── api/          # API functions
+│   ├── stores/           # Zustand state stores
+│   ├── theme/            # Design tokens and theme
+│   ├── types/            # TypeScript type definitions
+│   └── utils/            # Helper functions
+├── assets/               # Images, fonts, icons
+└── supabase/            # Database migrations
+```
+
+## Component Rules
+
+### Component Creation Pattern
+```tsx
+// ALWAYS use this structure for components:
+
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { colors, spacing } from '@/theme';
+
+interface ComponentNameProps {
+  // Props interface with JSDoc comments
+  /** Label text to display */
+  label: string;
+  /** Optional callback when pressed */
+  onPress?: () => void;
+}
+
+export const ComponentName: React.FC<ComponentNameProps> = ({ 
+  label,
+  onPress 
+}) => {
+  // Hooks at the top
+  // Event handlers next
+  // Render logic
+  
+  return (
+    <View style={styles.container}>
+      <Text>{label}</Text>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    padding: spacing.md,
+    backgroundColor: colors.white
+  }
+});
+```
+
+### Component Naming
+- PascalCase for components: `TaskCard.tsx`
+- Index files for folders: `components/index.ts` with exports
+- Descriptive names: `CleaningCaptainCard` not `CaptainCard`
+
+## State Management Rules
+
+### Zustand Stores Pattern
+```tsx
+// ALWAYS structure stores like this:
+
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+
+interface StoreState {
+  // State
+  items: Item[];
+  loading: boolean;
+  error: string | null;
+  
+  // Actions (always prefixed with verb)
+  setItems: (items: Item[]) => void;
+  addItem: (item: Item) => void;
+  removeItem: (id: string) => void;
+  resetStore: () => void;
+}
+
+export const useStore = create<StoreState>()(
+  devtools(
+    (set) => ({
+      // Initial state
+      items: [],
+      loading: false,
+      error: null,
+      
+      // Actions
+      setItems: (items) => set({ items }),
+      addItem: (item) => set((state) => ({ 
+        items: [...state.items, item] 
+      })),
+      removeItem: (id) => set((state) => ({
+        items: state.items.filter(i => i.id !== id)
+      })),
+      resetStore: () => set({ items: [], loading: false, error: null })
+    }),
+    { name: 'store-name' }
+  )
+);
+```
+
+### Store Organization
+Create separate stores for:
+- `useAuthStore` - user session, auth state
+- `useHouseholdStore` - household data, members
+- `useTaskStore` - tasks, filters, sorting
+- `useCaptainStore` - captain schedule, ratings
+- `useChatStore` - messages, typing indicators
+- `useGameStore` - points, levels, badges
+
+## API & Supabase Rules
+
+### API Functions Pattern
+```tsx
+// ALWAYS structure API calls like this:
+
+import { supabase } from '@/lib/supabase';
+import type { Task } from '@/types';
+
+export async function getTasks(householdId: string): Promise<Task[]> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('household_id', householdId)
+    .order('created_at', { ascending: false });
+    
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createTask(task: Omit<Task, 'id' | 'created_at'>): Promise<Task> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert(task)
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return data;
+}
+```
+
+### React Query Usage
+```tsx
+// ALWAYS use React Query for server state:
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+// Query hook
+export function useTasks(householdId: string) {
+  return useQuery({
+    queryKey: ['tasks', householdId],
+    queryFn: () => getTasks(householdId),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+// Mutation with optimistic update
+export function useCreateTask() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: createTask,
+    onMutate: async (newTask) => {
+      // Optimistic update
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const previousTasks = queryClient.getQueryData(['tasks']);
+      queryClient.setQueryData(['tasks'], (old) => [...old, newTask]);
+      return { previousTasks };
+    },
+    onError: (err, newTask, context) => {
+      // Rollback on error
+      queryClient.setQueryData(['tasks'], context.previousTasks);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+```
+
+## TypeScript Rules
+
+### Type Definition Pattern
+```tsx
+// ALWAYS define types in separate files:
+// types/task.ts
+
+export interface Task {
+  id: string;
+  household_id: string;
+  title: string;
+  description?: string;
+  room_id?: string;
+  assigned_to?: string;
+  points: number;
+  status: 'pending' | 'in_progress' | 'completed';
+  created_at: string;
+  updated_at: string;
+}
+
+// Use type for unions/intersections
+export type TaskStatus = 'pending' | 'in_progress' | 'completed';
+
+// Use interface for objects
+export interface CreateTaskInput {
+  title: string;
+  points: number;
+}
+
+// Always export types
+export type { Task, TaskStatus, CreateTaskInput };
+```
+
+### Strict Type Usage
+- NEVER use `any` - use `unknown` if type is truly unknown
+- ALWAYS define return types for functions
+- Use `Omit`, `Pick`, `Partial` for type utilities
+- Prefer interfaces over type aliases for objects
+
+## Styling Rules
+
+### Design Tokens Usage
+```tsx
+// ALWAYS import from theme:
+import { colors, spacing, typography, shadows } from '@/theme';
+
+// NEVER hardcode values:
+// ❌ BAD
+padding: 16,
+color: '#FF6B6B',
+
+// ✅ GOOD
+padding: spacing.md,
+color: colors.primary,
+```
+
+### StyleSheet Pattern
+```tsx
+// ALWAYS use StyleSheet.create at component bottom:
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: spacing.md,
+    backgroundColor: colors.background,
+  },
+  title: {
+    ...typography.h2,
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: spacing.md,
+    ...shadows.md,
+  },
+});
+```
+
+## Animation Rules
+
+### Reanimated 3 Pattern
+```tsx
+// ALWAYS use Reanimated 3 for animations:
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  interpolate,
+  FadeIn,
+  FadeOut,
+} from 'react-native-reanimated';
+
+// Entering/Exiting animations
+<Animated.View entering={FadeIn} exiting={FadeOut}>
+  {content}
+</Animated.View>
+
+// Custom animations
+const scale = useSharedValue(1);
+
+const animatedStyle = useAnimatedStyle(() => ({
+  transform: [{ scale: scale.value }],
+}));
+
+const handlePress = () => {
+  scale.value = withSpring(1.2, {
+    damping: 15,
+    stiffness: 150,
+  });
+};
+```
+
+## Error Handling Rules
+
+### Try-Catch Pattern
+```tsx
+// ALWAYS handle errors gracefully:
+try {
+  setLoading(true);
+  const result = await apiCall();
+  setData(result);
+} catch (error) {
+  console.error('Error in ComponentName:', error);
+  setError(error.message || 'Something went wrong');
+  
+  // Show user-friendly message
+  Toast.show({
+    type: 'error',
+    text: 'Failed to load data. Please try again.',
+  });
+} finally {
+  setLoading(false);
+}
+```
+
+### Error Boundaries
+```tsx
+// Wrap major sections in error boundaries:
+<ErrorBoundary fallback={<ErrorFallback />}>
+  <ScreenContent />
+</ErrorBoundary>
+```
+
+## Performance Rules
+
+1. **Memoization**
+   - Use `React.memo` for expensive components
+   - Use `useMemo` for expensive computations
+   - Use `useCallback` for functions passed as props
+
+2. **List Optimization**
+   ```tsx
+   <FlatList
+     data={items}
+     keyExtractor={(item) => item.id}
+     getItemLayout={(data, index) => ({
+       length: ITEM_HEIGHT,
+       offset: ITEM_HEIGHT * index,
+       index,
+     })}
+     maxToRenderPerBatch={10}
+     windowSize={10}
+     removeClippedSubviews
+   />
+   ```
+
+3. **Image Optimization**
+   ```tsx
+   import { Image } from 'expo-image';
+   
+   <Image
+     source={{ uri }}
+     placeholder={blurhash}
+     contentFit="cover"
+     transition={200}
+   />
+   ```
+
+## Navigation Rules
+
+### Expo Router Pattern
+```tsx
+// File-based routing structure:
+// app/(tabs)/home.tsx
+
+import { Stack } from 'expo-router';
+
+export default function HomeScreen() {
+  return (
+    <>
+      <Stack.Screen 
+        options={{
+          title: 'Home',
+          headerShown: false,
+        }} 
+      />
+      <ScreenContent />
+    </>
+  );
+}
+
+// Navigation
+import { router } from 'expo-router';
+
+// Navigate
+router.push('/task/123');
+router.replace('/home');
+router.back();
+
+// With params
+router.push({
+  pathname: '/task/[id]',
+  params: { id: '123' },
+});
+```
+
+## Testing Rules
+
+### Component Testing Pattern
+```tsx
+// ALWAYS test user interactions:
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+
+describe('TaskCard', () => {
+  it('should complete task when pressed', async () => {
+    const onComplete = jest.fn();
+    const { getByTestId } = render(
+      <TaskCard task={mockTask} onComplete={onComplete} />
+    );
+    
+    fireEvent.press(getByTestId('complete-button'));
+    
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledWith(mockTask.id);
+    });
+  });
+});
+```
+
+## Git Commit Rules
+
+### Commit Message Format
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+Types:
+- `feat`: New feature
+- `fix`: Bug fix
+- `perf`: Performance improvement
+- `refactor`: Code refactoring
+- `style`: Code style changes
+- `test`: Test additions/changes
+- `docs`: Documentation
+- `chore`: Maintenance
+
+Examples:
+```
+feat(tasks): add task timer functionality
+fix(auth): resolve login state persistence issue
+perf(list): optimize task list rendering
+```
+
+## Code Quality Checklist
+
+Before committing, ensure:
+- [ ] TypeScript compiles without errors
+- [ ] No console.logs in production code
+- [ ] All functions have return types
+- [ ] Components have proper TypeScript interfaces
+- [ ] Styles use design tokens, not hardcoded values
+- [ ] API calls have error handling
+- [ ] Lists have proper keys and optimization
+- [ ] Animations run at 60fps
+- [ ] Images are optimized
+- [ ] No commented-out code
+- [ ] Proper loading and error states
+- [ ] Accessibility labels on interactive elements
+
+## AI Assistant Instructions
+
+When generating code for this project:
+
+1. **ALWAYS follow the patterns above exactly**
+2. **NEVER skip error handling or loading states**
+3. **ALWAYS use TypeScript with strict types**
+4. **NEVER hardcode colors or spacing values**
+5. **ALWAYS use design tokens from theme**
+6. **ALWAYS implement optimistic UI updates**
+7. **NEVER use inline styles except for dynamic values**
+8. **ALWAYS memoize expensive operations**
+9. **ALWAYS handle offline scenarios**
+10. **NEVER compromise on 60fps performance**
+
+## Premium Feature Flags
+
+Always check premium status before showing features:
+```tsx
+const isPremium = useStore((state) => state.subscription?.plan === 'premium');
+
+if (isPremium) {
+  // Show premium feature
+}
+```
+
+Premium features to gate:
+- Detailed rating feedback
+- Levels 21-50
+- Speed bonuses
+- Unlimited notes
+- 15 premium badges
+- Custom avatars
+- Weekly reports
+- Alternative app icons
+
+## Critical Implementation Notes
+
+1. **Cleaning Captain** is the official term (not House Manager)
+2. **$4.99/month** is the premium price
+3. **Free tier** has levels 1-20, premium has 21-50
+4. **Points formula**: task points + (rating stars × 20) + streak bonus
+5. **Rating system** is the core differentiator - implement with extra care
+6. **Offline queue** must handle all actions and sync when online
+7. **Real-time** updates via Supabase subscriptions are critical
+8. **Haptic feedback** on all interactions (light/medium/heavy)
+9. **Accessibility** - all interactive elements need labels
+10. **Performance** - app must launch in <2 seconds
+
+---
+
+Remember: The goal is to create a delightful, performant app that makes household management fun through gamification and peer recognition.
+---
+alwaysApply: true
+---
