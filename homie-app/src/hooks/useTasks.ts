@@ -40,6 +40,7 @@ export interface UpdateTaskInput {
   title?: string;
   description?: string;
   room?: string;
+  category?: string;
   assignee_id?: string;
   due_date?: string;
   estimated_minutes?: number;

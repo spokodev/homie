@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +20,7 @@ import { useMembers } from '@/hooks/useMembers';
 import { useToast } from '@/components/Toast';
 import { ConfirmDialog } from '@/components/Modal/ConfirmDialog';
 import { MemberPermissions } from '@/utils/permissions';
+import { TASK_CATEGORIES, TaskCategoryId } from '@/constants';
 
 export default function TaskDetailsScreen() {
   const router = useRouter();
@@ -33,6 +35,9 @@ export default function TaskDetailsScreen() {
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAssigneeDialog, setShowAssigneeDialog] = useState(false);
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+  const [showDueDateDialog, setShowDueDateDialog] = useState(false);
+  const [editingDueDate, setEditingDueDate] = useState<Date | undefined>(undefined);
 
   // Fetch task details
   const { data: task, isLoading, refetch } = useQuery<Task>({
@@ -129,7 +134,7 @@ export default function TaskDetailsScreen() {
 
     try {
       await updateTask.mutateAsync({
-        taskId: task.id,
+        id: task.id,
         updates: {
           assignee_id: assigneeId || undefined,
         },
@@ -144,6 +149,51 @@ export default function TaskDetailsScreen() {
       setShowAssigneeDialog(false);
     } catch (error: any) {
       showToast(error.message || 'Failed to assign task', 'error');
+    }
+  };
+
+  const handleUpdateCategory = async (categoryId: TaskCategoryId | null) => {
+    if (!task) return;
+
+    try {
+      await updateTask.mutateAsync({
+        id: task.id,
+        updates: {
+          category: categoryId || undefined,
+        },
+      });
+
+      const category = TASK_CATEGORIES.find((c) => c.id === categoryId);
+      showToast(
+        categoryId ? `Category updated to ${category?.name}` : 'Category removed',
+        'success'
+      );
+      refetch();
+      setShowCategoryDialog(false);
+    } catch (error: any) {
+      showToast(error.message || 'Failed to update category', 'error');
+    }
+  };
+
+  const handleUpdateDueDate = async () => {
+    if (!task) return;
+
+    try {
+      await updateTask.mutateAsync({
+        id: task.id,
+        updates: {
+          due_date: editingDueDate?.toISOString() || undefined,
+        },
+      });
+
+      showToast(
+        editingDueDate ? 'Due date updated' : 'Due date removed',
+        'success'
+      );
+      refetch();
+      setShowDueDateDialog(false);
+    } catch (error: any) {
+      showToast(error.message || 'Failed to update due date', 'error');
     }
   };
 
@@ -265,6 +315,36 @@ export default function TaskDetailsScreen() {
           </View>
         </View>
 
+        {/* Category */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Category</Text>
+            {!isCompleted && (
+              <TouchableOpacity onPress={() => setShowCategoryDialog(true)}>
+                <Text style={styles.changeButton}>Change</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {task.category ? (
+            (() => {
+              const category = TASK_CATEGORIES.find(c => c.id === task.category);
+              return category ? (
+                <View style={[styles.categoryCard, { backgroundColor: category.color + '20' }]}>
+                  <Text style={styles.categoryIcon}>{category.icon}</Text>
+                  <Text style={[styles.categoryText, { color: category.color }]}>
+                    {category.name}
+                  </Text>
+                </View>
+              ) : null;
+            })()
+          ) : (
+            <View style={[styles.assigneeCard, styles.unassignedCard]}>
+              <Ionicons name="apps-outline" size={20} color={Colors.textSecondary} />
+              <Text style={styles.unassignedText}>No category assigned</Text>
+            </View>
+          )}
+        </View>
+
         {/* Assignee */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -289,15 +369,25 @@ export default function TaskDetailsScreen() {
         </View>
 
         {/* Due Date */}
-        {task.due_date && (
-          <View style={styles.section}>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Due Date</Text>
-            <View style={styles.dateCard}>
-              <Ionicons name="calendar" size={20} color={Colors.primary} />
-              <Text style={styles.dateText}>{formatDate(task.due_date)}</Text>
-            </View>
+            {!isCompleted && (
+              <TouchableOpacity
+                onPress={() => {
+                  setEditingDueDate(task.due_date ? new Date(task.due_date) : undefined);
+                  setShowDueDateDialog(true);
+                }}
+              >
+                <Text style={styles.changeButton}>Change</Text>
+              </TouchableOpacity>
+            )}
           </View>
-        )}
+          <View style={styles.dateCard}>
+            <Ionicons name="calendar" size={20} color={Colors.primary} />
+            <Text style={styles.dateText}>{formatDate(task.due_date)}</Text>
+          </View>
+        </View>
 
         {/* Completion Info */}
         {isCompleted && (
@@ -402,6 +492,142 @@ export default function TaskDetailsScreen() {
             </ScrollView>
           </View>
         </View>
+      )}
+
+      {/* Category Selection Modal */}
+      {showCategoryDialog && (
+        <View style={styles.assigneeModal}>
+          <View style={styles.assigneeModalContent}>
+            <View style={styles.assigneeModalHeader}>
+              <Text style={styles.assigneeModalTitle}>Select Category</Text>
+              <TouchableOpacity onPress={() => setShowCategoryDialog(false)}>
+                <Ionicons name="close" size={24} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.assigneeList}>
+              {/* No category option */}
+              <TouchableOpacity
+                style={styles.assigneeOption}
+                onPress={() => handleUpdateCategory(null)}
+              >
+                <Ionicons name="close-circle-outline" size={24} color={Colors.textSecondary} style={{marginRight: 12}} />
+                <View style={styles.assigneeOptionInfo}>
+                  <Text style={styles.assigneeOptionName}>No Category</Text>
+                  <Text style={styles.assigneeOptionDesc}>Remove category</Text>
+                </View>
+                {!task?.category && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
+              </TouchableOpacity>
+
+              {/* Category options */}
+              {TASK_CATEGORIES.map((cat) => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={styles.assigneeOption}
+                  onPress={() => handleUpdateCategory(cat.id)}
+                >
+                  <Text style={{fontSize: 32, marginRight: 12}}>{cat.icon}</Text>
+                  <View style={styles.assigneeOptionInfo}>
+                    <Text style={styles.assigneeOptionName}>{cat.name}</Text>
+                    <View style={[styles.categoryPreview, { backgroundColor: cat.color + '30' }]}>
+                      <Text style={[styles.categoryPreviewText, { color: cat.color }]}>
+                        {cat.id}
+                      </Text>
+                    </View>
+                  </View>
+                  {task?.category === cat.id && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      )}
+
+      {/* Due Date Edit Modal */}
+      {showDueDateDialog && (
+        <Modal transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Set Due Date</Text>
+                <TouchableOpacity onPress={() => setShowDueDateDialog(false)}>
+                  <Ionicons name="close" size={24} color={Colors.text} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.datePickerContainer}>
+                {/* Quick presets */}
+                <View style={styles.presetsRow}>
+                  <TouchableOpacity
+                    style={styles.presetButton}
+                    onPress={() => {
+                      const date = new Date();
+                      date.setHours(date.getHours() + 2);
+                      setEditingDueDate(date);
+                    }}
+                  >
+                    <Text style={styles.presetButtonText}>In 2 hours</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.presetButton}
+                    onPress={() => {
+                      const date = new Date();
+                      date.setDate(date.getDate() + 1);
+                      date.setHours(9, 0, 0, 0);
+                      setEditingDueDate(date);
+                    }}
+                  >
+                    <Text style={styles.presetButtonText}>Tomorrow 9 AM</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.presetButton}
+                    onPress={() => {
+                      const date = new Date();
+                      date.setDate(date.getDate() + 7);
+                      setEditingDueDate(date);
+                    }}
+                  >
+                    <Text style={styles.presetButtonText}>Next Week</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Current selection */}
+                <Text style={styles.currentDateLabel}>Selected:</Text>
+                <Text style={styles.currentDateText}>
+                  {editingDueDate
+                    ? editingDueDate.toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })
+                    : 'No due date'}
+                </Text>
+
+                {/* Action buttons */}
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={styles.modalButtonSecondary}
+                    onPress={() => {
+                      setEditingDueDate(undefined);
+                      handleUpdateDueDate();
+                    }}
+                  >
+                    <Text style={styles.modalButtonSecondaryText}>Remove Date</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.modalButtonPrimary}
+                    onPress={handleUpdateDueDate}
+                    disabled={!editingDueDate}
+                  >
+                    <Text style={styles.modalButtonPrimaryText}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+        </Modal>
       )}
     </SafeAreaView>
   );
@@ -673,5 +899,112 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     ...Typography.button,
     color: Colors.error,
+  },
+  // Category styles
+  categoryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.medium,
+    gap: Spacing.sm,
+  },
+  categoryIcon: {
+    fontSize: 32,
+  },
+  categoryText: {
+    ...Typography.bodyLarge,
+    fontWeight: '600',
+  },
+  categoryPreview: {
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.small,
+  },
+  categoryPreviewText: {
+    ...Typography.labelSmall,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  // Date picker modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: BorderRadius.large,
+    borderTopRightRadius: BorderRadius.large,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.gray300,
+  },
+  modalTitle: {
+    ...Typography.h4,
+    color: Colors.text,
+  },
+  datePickerContainer: {
+    padding: Spacing.lg,
+  },
+  presetsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  presetButton: {
+    flex: 1,
+    backgroundColor: Colors.primary + '15',
+    borderRadius: BorderRadius.medium,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    alignItems: 'center',
+  },
+  presetButtonText: {
+    ...Typography.bodyMedium,
+    color: Colors.primary,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  currentDateLabel: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.xs,
+  },
+  currentDateText: {
+    ...Typography.h4,
+    color: Colors.text,
+    marginBottom: Spacing.lg,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  modalButtonPrimary: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.medium,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  modalButtonPrimaryText: {
+    ...Typography.button,
+    color: Colors.white,
+  },
+  modalButtonSecondary: {
+    flex: 1,
+    backgroundColor: Colors.gray300,
+    borderRadius: BorderRadius.medium,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  modalButtonSecondaryText: {
+    ...Typography.button,
+    color: Colors.text,
   },
 });
