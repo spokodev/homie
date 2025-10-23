@@ -2,11 +2,9 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -14,17 +12,32 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
 import { useCreateTask } from '@/hooks/useTasks';
 import { useHousehold } from '@/contexts/HouseholdContext';
+import { TextInput } from '@/components/Form/TextInput';
+import { TextArea } from '@/components/Form/TextArea';
+import { useToast } from '@/components/Toast';
+import {
+  validateTaskTitle,
+  validateTaskDescription,
+  validateEstimatedMinutes,
+  validateRoomName,
+} from '@/utils/validation';
 
 export default function CreateTaskModal() {
   const router = useRouter();
   const { household, member } = useHousehold();
   const createTask = useCreateTask();
+  const { showToast } = useToast();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [room, setRoom] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState('');
-  const [errors, setErrors] = useState<{ title?: string }>({});
+  const [errors, setErrors] = useState<{
+    title?: string;
+    description?: string;
+    room?: string;
+    estimatedMinutes?: string;
+  }>({});
 
   const calculatePoints = (minutes: string) => {
     const mins = parseInt(minutes) || 0;
@@ -32,10 +45,41 @@ export default function CreateTaskModal() {
   };
 
   const validateForm = () => {
-    const newErrors: { title?: string } = {};
+    const newErrors: {
+      title?: string;
+      description?: string;
+      room?: string;
+      estimatedMinutes?: string;
+    } = {};
 
-    if (!title.trim()) {
-      newErrors.title = 'Title is required';
+    // Validate title
+    const titleValidation = validateTaskTitle(title);
+    if (!titleValidation.isValid) {
+      newErrors.title = titleValidation.error;
+    }
+
+    // Validate description (optional)
+    if (description.trim()) {
+      const descValidation = validateTaskDescription(description);
+      if (!descValidation.isValid) {
+        newErrors.description = descValidation.error;
+      }
+    }
+
+    // Validate room (optional)
+    if (room.trim()) {
+      const roomValidation = validateRoomName(room);
+      if (!roomValidation.isValid) {
+        newErrors.room = roomValidation.error;
+      }
+    }
+
+    // Validate estimated minutes (optional)
+    if (estimatedMinutes.trim()) {
+      const minutesValidation = validateEstimatedMinutes(estimatedMinutes);
+      if (!minutesValidation.isValid) {
+        newErrors.estimatedMinutes = minutesValidation.error;
+      }
     }
 
     setErrors(newErrors);
@@ -46,7 +90,7 @@ export default function CreateTaskModal() {
     if (!validateForm()) return;
 
     if (!household || !member) {
-      Alert.alert('Error', 'No household or member found. Please complete onboarding.');
+      showToast('No household or member found. Please complete onboarding.', 'error');
       return;
     }
 
@@ -60,10 +104,10 @@ export default function CreateTaskModal() {
         created_by_member_id: member.id,
       });
 
-      Alert.alert('Success', 'Task created successfully!');
+      showToast('Task created successfully!', 'success');
       router.back();
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create task');
+      showToast(error.message || 'Failed to create task', 'error');
     }
   };
 
@@ -92,72 +136,72 @@ export default function CreateTaskModal() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Title */}
-        <View style={styles.section}>
-          <Text style={styles.label}>
-            Title <Text style={styles.required}>*</Text>
-          </Text>
-          <TextInput
-            style={[styles.input, errors.title && styles.inputError]}
-            placeholder="e.g., Clean the kitchen"
-            placeholderTextColor={Colors.gray500}
-            value={title}
-            onChangeText={(text) => {
-              setTitle(text);
-              if (errors.title) setErrors({ ...errors, title: undefined });
-            }}
-            autoFocus
-            editable={!createTask.isPending}
-          />
-          {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
-        </View>
+        <TextInput
+          label="Title"
+          placeholder="e.g., Clean the kitchen"
+          value={title}
+          onChangeText={(text) => {
+            setTitle(text);
+            if (errors.title) setErrors({ ...errors, title: undefined });
+          }}
+          error={errors.title}
+          required
+          autoFocus
+          editable={!createTask.isPending}
+          containerStyle={styles.section}
+        />
 
         {/* Description */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Add details..."
-            placeholderTextColor={Colors.gray500}
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-            editable={!createTask.isPending}
-          />
-        </View>
+        <TextArea
+          label="Description"
+          placeholder="Add details..."
+          value={description}
+          onChangeText={(text) => {
+            setDescription(text);
+            if (errors.description) setErrors({ ...errors, description: undefined });
+          }}
+          error={errors.description}
+          numberOfLines={4}
+          maxLength={500}
+          showCounter
+          editable={!createTask.isPending}
+          containerStyle={styles.section}
+        />
 
         {/* Room */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Room</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g., Kitchen, Living Room"
-            placeholderTextColor={Colors.gray500}
-            value={room}
-            onChangeText={setRoom}
-            editable={!createTask.isPending}
-          />
-        </View>
+        <TextInput
+          label="Room"
+          placeholder="e.g., Kitchen, Living Room"
+          value={room}
+          onChangeText={(text) => {
+            setRoom(text);
+            if (errors.room) setErrors({ ...errors, room: undefined });
+          }}
+          error={errors.room}
+          leftIcon="home-outline"
+          editable={!createTask.isPending}
+          containerStyle={styles.section}
+        />
 
         {/* Estimated Time */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Estimated Time (minutes)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g., 30"
-            placeholderTextColor={Colors.gray500}
-            value={estimatedMinutes}
-            onChangeText={setEstimatedMinutes}
-            keyboardType="number-pad"
-            editable={!createTask.isPending}
-          />
-          {estimatedMinutes && (
-            <Text style={styles.helperText}>
-              ≈ {calculatePoints(estimatedMinutes)} points
-            </Text>
-          )}
-        </View>
+        <TextInput
+          label="Estimated Time (minutes)"
+          placeholder="e.g., 30"
+          value={estimatedMinutes}
+          onChangeText={(text) => {
+            setEstimatedMinutes(text);
+            if (errors.estimatedMinutes)
+              setErrors({ ...errors, estimatedMinutes: undefined });
+          }}
+          error={errors.estimatedMinutes}
+          helperText={
+            estimatedMinutes ? `≈ ${calculatePoints(estimatedMinutes)} points` : undefined
+          }
+          leftIcon="time-outline"
+          keyboardType="number-pad"
+          editable={!createTask.isPending}
+          containerStyle={styles.section}
+        />
 
         {/* Info Card */}
         <View style={styles.infoCard}>
@@ -207,43 +251,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   section: {
-    marginBottom: Spacing.xl,
-  },
-  label: {
-    ...Typography.labelLarge,
-    color: Colors.text,
-    marginBottom: Spacing.sm,
-  },
-  required: {
-    color: Colors.error,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: Colors.gray300,
-    borderRadius: BorderRadius.medium,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
-    color: Colors.text,
-    backgroundColor: Colors.white,
-  },
-  inputError: {
-    borderColor: Colors.error,
-  },
-  textArea: {
-    minHeight: 100,
-    paddingTop: Spacing.md,
-  },
-  errorText: {
-    ...Typography.bodySmall,
-    color: Colors.error,
-    marginTop: Spacing.xs,
-  },
-  helperText: {
-    ...Typography.bodySmall,
-    color: Colors.textSecondary,
-    marginTop: Spacing.xs,
+    marginBottom: Spacing.md,
   },
   infoCard: {
     flexDirection: 'row',

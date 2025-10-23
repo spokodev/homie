@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -16,14 +15,20 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useCompleteTask, useDeleteTask, Task } from '@/hooks/useTasks';
 import { useHousehold } from '@/contexts/HouseholdContext';
+import { useToast } from '@/components/Toast';
+import { ConfirmDialog } from '@/components/Modal/ConfirmDialog';
+import { MemberPermissions } from '@/utils/permissions';
 
 export default function TaskDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ taskId: string }>();
   const { member } = useHousehold();
+  const { showToast } = useToast();
   const completeTask = useCompleteTask();
   const deleteTask = useDeleteTask();
   const [completing, setCompleting] = useState(false);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Fetch task details
   const { data: task, isLoading, refetch } = useQuery<Task>({
@@ -58,62 +63,61 @@ export default function TaskDetailsScreen() {
   });
 
   const handleEdit = () => {
+    // Check permission
+    const permission = MemberPermissions.canEditTask(member, task?.created_by);
+    if (!permission.allowed) {
+      showToast(permission.reason || 'Cannot edit this task', 'error');
+      return;
+    }
     router.push(`/(modals)/edit-task?taskId=${params.taskId}`);
   };
 
-  const handleComplete = () => {
-    Alert.alert(
-      'Complete Task',
-      `You'll earn ${task?.points} points for completing this task!`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Complete',
-          style: 'default',
-          onPress: async () => {
-            if (!task) return;
-            setCompleting(true);
-            try {
-              await completeTask.mutateAsync({
-                taskId: task.id,
-                actualMinutes: task.estimated_minutes,
-              });
+  const handleComplete = async () => {
+    if (!task) return;
 
-              Alert.alert('Success', `+${task.points} points earned! 🎉`);
-              router.back();
-            } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to complete task');
-            } finally {
-              setCompleting(false);
-            }
-          },
-        },
-      ]
-    );
+    // Check permission
+    const permission = MemberPermissions.canCompleteTask(member, task.assignee_id);
+    if (!permission.allowed) {
+      showToast(permission.reason || 'Cannot complete this task', 'error');
+      return;
+    }
+
+    setCompleting(true);
+    try {
+      await completeTask.mutateAsync({
+        taskId: task.id,
+        actualMinutes: task.estimated_minutes,
+      });
+
+      showToast(`+${task.points} points earned! 🎉`, 'success');
+      router.back();
+    } catch (error: any) {
+      showToast(error.message || 'Failed to complete task', 'error');
+    } finally {
+      setCompleting(false);
+      setShowCompleteDialog(false);
+    }
   };
 
-  const handleDelete = () => {
-    Alert.alert(
-      'Delete Task',
-      'Are you sure you want to delete this task? This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            if (!task) return;
-            try {
-              await deleteTask.mutateAsync(task.id);
-              Alert.alert('Success', 'Task deleted');
-              router.back();
-            } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to delete task');
-            }
-          },
-        },
-      ]
-    );
+  const handleDelete = async () => {
+    if (!task) return;
+
+    // Check permission
+    const permission = MemberPermissions.canDeleteTask(member, task.created_by);
+    if (!permission.allowed) {
+      showToast(permission.reason || 'Cannot delete this task', 'error');
+      return;
+    }
+
+    try {
+      await deleteTask.mutateAsync(task.id);
+      showToast('Task deleted', 'success');
+      router.back();
+    } catch (error: any) {
+      showToast(error.message || 'Failed to delete task', 'error');
+    } finally {
+      setShowDeleteDialog(false);
+    }
   };
 
   const formatDate = (dateString?: string) => {
@@ -272,7 +276,7 @@ export default function TaskDetailsScreen() {
         {canComplete && (
           <TouchableOpacity
             style={styles.completeButton}
-            onPress={handleComplete}
+            onPress={() => setShowCompleteDialog(true)}
             disabled={completing}
           >
             {completing ? (
@@ -286,11 +290,35 @@ export default function TaskDetailsScreen() {
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+        <TouchableOpacity style={styles.deleteButton} onPress={() => setShowDeleteDialog(true)}>
           <Ionicons name="trash" size={20} color={Colors.error} />
           <Text style={styles.deleteButtonText}>Delete</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Confirm Dialogs */}
+      <ConfirmDialog
+        visible={showCompleteDialog}
+        onClose={() => setShowCompleteDialog(false)}
+        onConfirm={handleComplete}
+        title="Complete Task"
+        message={`You'll earn ${task?.points} points for completing this task!`}
+        confirmText="Complete"
+        icon="checkmark-circle"
+        loading={completing}
+      />
+
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleDelete}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This cannot be undone."
+        confirmText="Delete"
+        confirmVariant="danger"
+        icon="trash"
+        loading={deleteTask.isPending}
+      />
     </SafeAreaView>
   );
 }

@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -14,12 +13,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/Toast';
+import { validateHouseholdName, validateMemberName } from '@/utils/validation';
 
 const EMOJI_ICONS = ['🏠', '🏡', '🏘️', '🏰', '🏢', '🏛️', '⛺', '🏕️'];
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [step, setStep] = useState(1);
 
   // Household data
@@ -38,8 +40,9 @@ export default function OnboardingScreen() {
   const validateStep1 = () => {
     const newErrors: { householdName?: string } = {};
 
-    if (!householdName.trim()) {
-      newErrors.householdName = 'Household name is required';
+    const householdValidation = validateHouseholdName(householdName);
+    if (!householdValidation.isValid) {
+      newErrors.householdName = householdValidation.error;
     }
 
     setErrors(newErrors);
@@ -49,8 +52,9 @@ export default function OnboardingScreen() {
   const validateStep2 = () => {
     const newErrors: { memberName?: string } = {};
 
-    if (!memberName.trim()) {
-      newErrors.memberName = 'Your name is required';
+    const memberValidation = validateMemberName(memberName);
+    if (!memberValidation.isValid) {
+      newErrors.memberName = memberValidation.error;
     }
 
     setErrors(newErrors);
@@ -70,7 +74,7 @@ export default function OnboardingScreen() {
   const handleComplete = async () => {
     if (!validateStep2()) return;
     if (!user) {
-      Alert.alert('Error', 'User not authenticated');
+      showToast('User not authenticated', 'error');
       return;
     }
 
@@ -110,10 +114,11 @@ export default function OnboardingScreen() {
       if (updateError) throw updateError;
 
       // Success! Navigate to home
+      showToast('Welcome to HomieLife! 🎉', 'success');
       router.replace('/(tabs)/home');
     } catch (error: any) {
       console.error('Onboarding error:', error);
-      Alert.alert('Error', error.message || 'Failed to create household');
+      showToast(error.message || 'Failed to create household', 'error');
     } finally {
       setLoading(false);
     }
