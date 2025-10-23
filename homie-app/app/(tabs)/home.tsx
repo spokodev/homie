@@ -138,7 +138,10 @@ export default function HomeScreen() {
               {household?.name || 'Loading...'}
             </Text>
           </View>
-          <TouchableOpacity style={styles.settingsButton}>
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={() => router.push('/(modals)/settings')}
+          >
             <Ionicons name="settings-outline" size={24} color={Colors.text} />
           </TouchableOpacity>
         </View>

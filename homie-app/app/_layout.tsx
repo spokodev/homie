@@ -151,12 +151,8 @@ function NavigationContent() {
 function RootLayoutComponent() {
   const initializePremium = usePremiumStore((state) => state.initialize);
 
-  const [fontsLoaded] = useFonts({
-    'CabinetGrotesk-Bold': require('@/assets/fonts/CabinetGrotesk-Bold.otf'),
-    'Inter-Regular': require('@/assets/fonts/Inter-Regular.ttf'),
-    'Inter-Medium': require('@/assets/fonts/Inter-Medium.ttf'),
-    'Inter-SemiBold': require('@/assets/fonts/Inter-SemiBold.ttf'),
-  });
+  // Using system fonts for now - custom fonts can be added later
+  const [fontsLoaded] = useFonts({});
 
   useEffect(() => {
     // Initialize RevenueCat when app starts

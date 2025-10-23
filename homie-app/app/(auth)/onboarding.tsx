@@ -169,7 +169,7 @@ export default function OnboardingScreen() {
             <View style={styles.form}>
               <Text style={styles.label}>Household Name</Text>
               <TextInput
-                style={[styles.input, errors.householdName && styles.inputError]}
+                style={[styles.input, errors.householdName ? styles.inputError : undefined]}
                 placeholder="e.g., Smith Family, Our Home"
                 placeholderTextColor={Colors.gray500}
                 value={householdName}
@@ -214,7 +214,7 @@ export default function OnboardingScreen() {
             <View style={styles.form}>
               <Text style={styles.label}>Your Name</Text>
               <TextInput
-                style={[styles.input, errors.memberName && styles.inputError]}
+                style={[styles.input, errors.memberName ? styles.inputError : undefined]}
                 placeholder="Enter your name"
                 placeholderTextColor={Colors.gray500}
                 value={memberName}

@@ -9,7 +9,6 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -123,7 +122,7 @@ export default function ForgotPasswordScreen() {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Email</Text>
                 <TextInput
-                  style={[styles.input, error && styles.inputError]}
+                  style={[styles.input, error ? styles.inputError : undefined]}
                   placeholder="your@email.com"
                   placeholderTextColor={Colors.gray500}
                   value={email}

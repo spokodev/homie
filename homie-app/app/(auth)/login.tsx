@@ -91,7 +91,7 @@ export default function LoginScreen() {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Email</Text>
                 <TextInput
-                  style={[styles.input, errors.email && styles.inputError]}
+                  style={[styles.input, errors.email ? styles.inputError : undefined]}
                   placeholder="your@email.com"
                   placeholderTextColor={Colors.gray500}
                   value={email}
@@ -113,7 +113,7 @@ export default function LoginScreen() {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Password</Text>
                 <TextInput
-                  style={[styles.input, errors.password && styles.inputError]}
+                  style={[styles.input, errors.password ? styles.inputError : undefined]}
                   placeholder="Enter your password"
                   placeholderTextColor={Colors.gray500}
                   value={password}

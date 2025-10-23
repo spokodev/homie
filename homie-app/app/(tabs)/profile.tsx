@@ -446,12 +446,6 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   // Badges styles
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
   badgeCount: {
     ...Typography.bodyLarge,
     color: Colors.primary,

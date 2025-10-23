@@ -118,7 +118,7 @@ export default function SignupScreen() {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Name</Text>
                 <TextInput
-                  style={[styles.input, errors.name && styles.inputError]}
+                  style={[styles.input, errors.name ? styles.inputError : undefined]}
                   placeholder="Your name"
                   placeholderTextColor={Colors.gray500}
                   value={name}
@@ -138,7 +138,7 @@ export default function SignupScreen() {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Email</Text>
                 <TextInput
-                  style={[styles.input, errors.email && styles.inputError]}
+                  style={[styles.input, errors.email ? styles.inputError : undefined]}
                   placeholder="your@email.com"
                   placeholderTextColor={Colors.gray500}
                   value={email}
@@ -160,7 +160,7 @@ export default function SignupScreen() {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Password</Text>
                 <TextInput
-                  style={[styles.input, errors.password && styles.inputError]}
+                  style={[styles.input, errors.password ? styles.inputError : undefined]}
                   placeholder="Min 8 characters"
                   placeholderTextColor={Colors.gray500}
                   value={password}
@@ -181,7 +181,7 @@ export default function SignupScreen() {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Confirm Password</Text>
                 <TextInput
-                  style={[styles.input, errors.confirmPassword && styles.inputError]}
+                  style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]}
                   placeholder="Re-enter password"
                   placeholderTextColor={Colors.gray500}
                   value={confirmPassword}

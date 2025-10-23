@@ -153,7 +153,8 @@ export function useCreateTask() {
           household_id: input.household_id,
           title: input.title,
           description: input.description,
-          room_id: input.room, // Note: This will be null for now since we use text room, not room_id
+          category: input.category,
+          room: input.room, // Store room as text field, not FK
           assignee_id: input.assignee_id,
           due_date: input.due_date,
           estimated_minutes: input.estimated_minutes,
