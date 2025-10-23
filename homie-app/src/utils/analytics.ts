@@ -38,6 +38,11 @@ export const ANALYTICS_EVENTS = {
   BADGE_EARNED: 'badge_earned',
   BADGE_VIEWED: 'badge_viewed',
 
+  // Captain Events
+  CAPTAIN_ROTATED: 'captain_rotated',
+  CAPTAIN_RATED: 'captain_rated',
+  CAPTAIN_STATS_VIEWED: 'captain_stats_viewed',
+
   // Navigation Events
   SCREEN_VIEWED: 'screen_viewed',
   TAB_CHANGED: 'tab_changed',

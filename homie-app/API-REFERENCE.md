@@ -8,6 +8,7 @@ Complete reference guide for all hooks, utilities, and contexts in the HomieLife
 - [Messages](#messages)
 - [Rooms & Notes](#rooms--notes)
 - [Badges](#badges)
+- [Captain & Ratings](#captain--ratings)
 - [Analytics](#analytics)
 - [Performance](#performance)
 - [Utilities](#utilities)
@@ -376,6 +377,133 @@ const progress = getBadgeProgress('marathon', {
   // ... other stats
 });
 // progress = "35/50"
+```
+
+---
+
+## Captain & Ratings
+
+### `useCaptain(householdId?)`
+Get the current captain for a household.
+
+**Returns:**
+```typescript
+{
+  id: string;
+  name: string;
+  avatar: string;
+  started_at: string;
+  ends_at: string;
+  days_left: number;
+  total_ratings: number;
+  average_rating: number | null;
+  times_captain: number;
+}
+```
+
+**Usage:**
+```typescript
+const { data: captain, isLoading } = useCaptain(household?.id);
+
+if (captain) {
+  console.log(`${captain.name} has ${captain.days_left} days left`);
+  console.log(`Average rating: ${captain.average_rating}/5`);
+}
+```
+
+### `useRotateCaptain()`
+Rotate to the next captain (manual or automatic selection).
+
+**Features:**
+- Auto-selects member who has been captain least often
+- Can manually specify next captain
+- Tracks rotation history
+- Awards analytics event
+
+**Usage:**
+```typescript
+const rotateCaptain = useRotateCaptain();
+
+// Auto-select next captain
+await rotateCaptain.mutateAsync({
+  household_id: 'uuid',
+});
+
+// Manually select captain
+await rotateCaptain.mutateAsync({
+  household_id: 'uuid',
+  next_captain_id: 'member-uuid',
+});
+```
+
+### `useCaptainStats(memberId?)`
+Get captain statistics for a member.
+
+**Usage:**
+```typescript
+const { data: stats } = useCaptainStats(member?.id);
+// stats = { times_captain: number, average_rating: number | null }
+```
+
+### `useRateCaptain()`
+Submit a rating for the current captain.
+
+**Features:**
+- Validates rating (1-5 stars)
+- Prevents duplicate ratings
+- Awards bonus points for high ratings (4-5 stars)
+- Updates household and member stats
+
+**Usage:**
+```typescript
+const rateCaptain = useRateCaptain();
+
+await rateCaptain.mutateAsync({
+  household_id: 'uuid',
+  captain_member_id: 'uuid',
+  rated_by_member_id: 'uuid',
+  rating: 5, // 1-5
+  comment: 'Great job!', // optional
+  rotation_start: '2024-01-01T00:00:00Z',
+  rotation_end: '2024-01-08T00:00:00Z',
+});
+```
+
+### `useHasRatedCaptain(householdId?, captainId?, memberId?, rotationStart?)`
+Check if current member has already rated the captain for this rotation.
+
+**Usage:**
+```typescript
+const { data: hasRated } = useHasRatedCaptain(
+  household?.id,
+  captain?.id,
+  member?.id,
+  captain?.started_at
+);
+
+if (hasRated) {
+  // Show "Already rated" message
+}
+```
+
+### `useCaptainRotationRatings(captainId?, rotationStart?)`
+Get all ratings for a specific captain rotation.
+
+**Usage:**
+```typescript
+const { data: ratings } = useCaptainRotationRatings(
+  captain?.id,
+  captain?.started_at
+);
+```
+
+### `useCaptainRatingHistory(captainId?)`
+Get rating history for a captain (all rotations).
+
+**Usage:**
+```typescript
+const { data: history } = useCaptainRatingHistory(member?.id);
+// Returns last 50 ratings
 ```
 
 ---

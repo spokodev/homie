@@ -17,13 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useTasksRealtime, useMembersRealtime } from '@/hooks/useRealtimeSubscription';
 import { useMembers } from '@/hooks/useMembers';
-
-// Dummy captain data (will be implemented in EPIC 7)
-const currentCaptain = {
-  name: 'Mom',
-  avatar: '👩',
-  daysLeft: 3,
-};
+import { useCaptain } from '@/hooks/useCaptain';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -34,6 +28,7 @@ export default function HomeScreen() {
     member?.id
   );
   const { data: allMembers = [] } = useMembers(household?.id);
+  const { data: captain, isLoading: captainLoading } = useCaptain(household?.id);
 
   // Real-time subscriptions
   useTasksRealtime(household?.id);
@@ -48,6 +43,13 @@ export default function HomeScreen() {
 
   const handleCreateTask = () => {
     router.push('/(modals)/create-task');
+  };
+
+  const handleRateCaptain = () => {
+    if (!captain || !household || !member) return;
+    router.push(
+      `/(modals)/rate-captain?captainId=${captain.id}&captainName=${captain.name}&rotationStart=${captain.started_at}&rotationEnd=${captain.ends_at}`
+    );
   };
 
   const getTaskIcon = (room?: string) => {
@@ -100,24 +102,56 @@ export default function HomeScreen() {
         </View>
 
         {/* Captain Card */}
-        <View style={styles.captainCard}>
-          <View style={styles.captainBadge}>
-            <MaterialCommunityIcons name="crown" size={20} color={Colors.accent} />
+        {captainLoading ? (
+          <View style={[styles.captainCard, styles.captainCardLoading]}>
+            <ActivityIndicator size="small" color={Colors.primary} />
           </View>
-          <View style={styles.captainInfo}>
-            <Text style={styles.captainTitle}>Captain of the Week</Text>
-            <View style={styles.captainDetails}>
-              <Text style={styles.captainAvatar}>{currentCaptain.avatar}</Text>
-              <View>
-                <Text style={styles.captainName}>{currentCaptain.name}</Text>
-                <Text style={styles.captainDays}>{currentCaptain.daysLeft} days left</Text>
+        ) : captain ? (
+          <View style={styles.captainCard}>
+            <View style={styles.captainBadge}>
+              <MaterialCommunityIcons name="crown" size={20} color={Colors.accent} />
+            </View>
+            <View style={styles.captainInfo}>
+              <Text style={styles.captainTitle}>Captain of the Week</Text>
+              <View style={styles.captainDetails}>
+                <Text style={styles.captainAvatar}>{captain.avatar}</Text>
+                <View>
+                  <Text style={styles.captainName}>{captain.name}</Text>
+                  <Text style={styles.captainDays}>
+                    {captain.days_left} day{captain.days_left !== 1 ? 's' : ''} left
+                  </Text>
+                  {captain.average_rating && (
+                    <View style={styles.captainRating}>
+                      <Ionicons name="star" size={12} color={Colors.accent} />
+                      <Text style={styles.captainRatingText}>
+                        {captain.average_rating.toFixed(1)}
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
+            <TouchableOpacity
+              style={styles.rateButton}
+              onPress={handleRateCaptain}
+              disabled={captain.id === member?.id}
+            >
+              <Text
+                style={[
+                  styles.rateButtonText,
+                  captain.id === member?.id && styles.rateButtonTextDisabled,
+                ]}
+              >
+                {captain.id === member?.id ? 'You' : 'Rate'}
+              </Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.rateButton}>
-            <Text style={styles.rateButtonText}>Rate</Text>
-          </TouchableOpacity>
-        </View>
+        ) : (
+          <View style={[styles.captainCard, styles.captainCardEmpty]}>
+            <MaterialCommunityIcons name="crown-outline" size={32} color={Colors.textSecondary} />
+            <Text style={styles.captainEmptyText}>No captain assigned yet</Text>
+          </View>
+        )}
 
         {/* My Tasks Today */}
         <View style={styles.section}>
@@ -259,6 +293,30 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     color: Colors.textSecondary,
   },
+  captainRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  captainRatingText: {
+    ...Typography.labelSmall,
+    color: Colors.accent,
+    marginLeft: 2,
+  },
+  captainCardLoading: {
+    justifyContent: 'center',
+    minHeight: 100,
+  },
+  captainCardEmpty: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 100,
+    gap: Spacing.sm,
+  },
+  captainEmptyText: {
+    ...Typography.bodyMedium,
+    color: Colors.textSecondary,
+  },
   rateButton: {
     backgroundColor: Colors.secondary,
     paddingHorizontal: Spacing.md,
@@ -268,6 +326,9 @@ const styles = StyleSheet.create({
   rateButtonText: {
     ...Typography.labelMedium,
     color: Colors.white,
+  },
+  rateButtonTextDisabled: {
+    opacity: 0.6,
   },
   section: {
     marginTop: Spacing.lg,
