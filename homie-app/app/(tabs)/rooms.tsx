@@ -1,15 +1,107 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Typography } from '@/theme';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { useHousehold } from '@/contexts/HouseholdContext';
+import { useRooms, Room } from '@/hooks/useRooms';
 
 export default function RoomsScreen() {
+  const router = useRouter();
+  const { household } = useHousehold();
+  const { data: rooms = [], isLoading, error } = useRooms(household?.id);
+
+  const handleAddRoom = () => {
+    router.push('/(modals)/add-room');
+  };
+
+  const handleRoomPress = (room: Room) => {
+    router.push({
+      pathname: '/(modals)/room-details',
+      params: { roomId: room.id, roomName: room.name },
+    });
+  };
+
+  const renderRoom = ({ item }: { item: Room }) => (
+    <TouchableOpacity style={styles.roomCard} onPress={() => handleRoomPress(item)}>
+      <View style={styles.roomIconContainer}>
+        <Text style={styles.roomIcon}>{item.icon}</Text>
+      </View>
+      <Text style={styles.roomName} numberOfLines={1}>
+        {item.name}
+      </Text>
+      {item.notes_count !== undefined && item.notes_count > 0 && (
+        <View style={styles.notesCountBadge}>
+          <Ionicons name="document-text" size={12} color={Colors.white} />
+          <Text style={styles.notesCountText}>{item.notes_count}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Ionicons name="home-outline" size={64} color={Colors.gray500} />
+      <Text style={styles.emptyStateTitle}>No rooms yet</Text>
+      <Text style={styles.emptyStateText}>
+        Add rooms to organize your household tasks and notes
+      </Text>
+      <TouchableOpacity style={styles.emptyStateButton} onPress={handleAddRoom}>
+        <Ionicons name="add" size={20} color={Colors.white} />
+        <Text style={styles.emptyStateButtonText}>Add First Room</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color={Colors.error} />
+          <Text style={styles.errorText}>Failed to load rooms</Text>
+          <Text style={styles.errorHint}>Please check your connection and try again</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.content}>
+      {/* Header */}
+      <View style={styles.header}>
         <Text style={styles.title}>Rooms & Notes</Text>
-        <Text style={styles.subtitle}>Coming soon...</Text>
+        {rooms.length > 0 && (
+          <TouchableOpacity style={styles.addButton} onPress={handleAddRoom}>
+            <Ionicons name="add" size={24} color={Colors.primary} />
+          </TouchableOpacity>
+        )}
       </View>
+
+      {/* Rooms Grid */}
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={styles.loadingText}>Loading rooms...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={rooms}
+          keyExtractor={(item) => item.id}
+          renderItem={renderRoom}
+          numColumns={2}
+          contentContainerStyle={styles.roomsList}
+          ListEmptyComponent={renderEmptyState}
+          columnWrapperStyle={rooms.length > 0 ? styles.row : undefined}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -19,18 +111,142 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  content: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.gray300,
+  },
+  title: {
+    ...Typography.h3,
+    color: Colors.text,
+  },
+  addButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.accent + '30',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  title: {
-    ...Typography.h2,
-    color: Colors.text,
-  },
-  subtitle: {
-    ...Typography.bodyLarge,
+  loadingText: {
+    ...Typography.bodyMedium,
     color: Colors.textSecondary,
-    marginTop: 8,
+    marginTop: Spacing.md,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  errorText: {
+    ...Typography.h4,
+    color: Colors.error,
+    marginTop: Spacing.md,
+  },
+  errorHint: {
+    ...Typography.bodyMedium,
+    color: Colors.textSecondary,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
+  },
+  roomsList: {
+    padding: Spacing.md,
+    flexGrow: 1,
+  },
+  row: {
+    justifyContent: 'space-between',
+  },
+  roomCard: {
+    flex: 1,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.large,
+    padding: Spacing.lg,
+    margin: Spacing.xs,
+    alignItems: 'center',
+    minHeight: 140,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    position: 'relative',
+  },
+  roomIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.accent + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  roomIcon: {
+    fontSize: 32,
+  },
+  roomName: {
+    ...Typography.bodyLarge,
+    color: Colors.text,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  notesCountBadge: {
+    position: 'absolute',
+    top: Spacing.sm,
+    right: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: 4,
+    gap: 2,
+  },
+  notesCountText: {
+    ...Typography.labelSmall,
+    color: Colors.white,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: Spacing.xxl,
+    paddingHorizontal: Spacing.xl,
+  },
+  emptyStateTitle: {
+    ...Typography.h4,
+    color: Colors.text,
+    marginTop: Spacing.md,
+  },
+  emptyStateText: {
+    ...Typography.bodyMedium,
+    color: Colors.textSecondary,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
+  },
+  emptyStateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.full,
+    gap: Spacing.xs,
+  },
+  emptyStateButtonText: {
+    ...Typography.button,
+    color: Colors.white,
   },
 });
