@@ -13,6 +13,7 @@ import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { initializeAnalytics } from '@/utils/analytics';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useGenerateRecurringTaskInstances } from '@/hooks/useRecurringTasks';
 
 // Initialize Sentry
 Sentry.init({
@@ -46,6 +47,17 @@ const queryClient = new QueryClient({
 function NavigationContent() {
   useProtectedRoute(); // Protect routes based on auth state
   useNotifications(); // Initialize notification listeners
+
+  const generateRecurringTasks = useGenerateRecurringTaskInstances();
+
+  // Auto-generate recurring tasks on app start
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      generateRecurringTasks.mutate();
+    }, 2000); // Wait 2 seconds after app starts
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <>
@@ -106,6 +118,20 @@ function NavigationContent() {
         />
         <Stack.Screen
           name="(modals)/notifications"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="(modals)/recurring-tasks"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="(modals)/create-recurring-task"
           options={{
             presentation: 'modal',
             animation: 'slide_from_bottom',

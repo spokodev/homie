@@ -65,6 +65,21 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Task Management Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Task Management</Text>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/(modals)/recurring-tasks')}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="repeat-outline" size={20} color={Colors.primary} />
+              <Text style={styles.menuItemText}>Recurring Tasks</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Colors.gray500} />
+          </TouchableOpacity>
+        </View>
+
         {/* Notifications Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Notifications</Text>

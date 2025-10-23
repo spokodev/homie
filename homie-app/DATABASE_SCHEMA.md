@@ -125,6 +125,7 @@ CREATE TABLE tasks (
 
   assignee_id UUID REFERENCES members(id) ON DELETE SET NULL,
   created_by UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  recurring_task_id UUID REFERENCES recurring_tasks(id) ON DELETE SET NULL,
 
   due_date TIMESTAMPTZ,
   estimated_minutes INTEGER,
@@ -292,6 +293,55 @@ CREATE INDEX idx_member_badges_badge ON member_badges(badge_id);
 
 ---
 
+### recurring_tasks
+
+Stores templates for recurring tasks that generate task instances automatically.
+
+```sql
+CREATE TABLE recurring_tasks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+
+  -- Template fields
+  title TEXT NOT NULL,
+  description TEXT,
+  category TEXT,
+  room TEXT,
+  estimated_minutes INTEGER,
+  points INTEGER,
+  assignee_id UUID REFERENCES members(id) ON DELETE SET NULL,
+
+  -- Recurrence settings
+  recurrence_rule JSONB NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+
+  -- Metadata
+  last_generated_at TIMESTAMPTZ,
+  next_occurrence_at TIMESTAMPTZ NOT NULL,
+  total_occurrences INTEGER DEFAULT 0,
+
+  created_by UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Fields:**
+- `recurrence_rule`: JSON object with frequency, interval, days_of_week, day_of_month, end_date, end_after_occurrences
+- `is_active`: Whether this recurring task is currently active
+- `last_generated_at`: When the last task instance was generated
+- `next_occurrence_at`: When the next task instance should be generated
+- `total_occurrences`: Count of how many task instances have been generated
+
+**Indexes:**
+```sql
+CREATE INDEX idx_recurring_tasks_household ON recurring_tasks(household_id);
+CREATE INDEX idx_recurring_tasks_active ON recurring_tasks(is_active, next_occurrence_at);
+CREATE INDEX idx_recurring_tasks_next ON recurring_tasks(next_occurrence_at) WHERE is_active = TRUE;
+```
+
+---
+
 ## Row Level Security
 
 All tables have Row Level Security (RLS) enabled to ensure users can only access data from their households.
@@ -418,6 +468,38 @@ CREATE TABLE IF NOT EXISTS captain_ratings (
 -- Add push_token field for notifications (v0.8.2)
 ALTER TABLE members
   ADD COLUMN IF NOT EXISTS push_token TEXT;
+
+-- Create recurring_tasks table (v0.8.7)
+CREATE TABLE IF NOT EXISTS recurring_tasks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  category TEXT,
+  room TEXT,
+  estimated_minutes INTEGER,
+  points INTEGER,
+  assignee_id UUID REFERENCES members(id) ON DELETE SET NULL,
+  recurrence_rule JSONB NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  last_generated_at TIMESTAMPTZ,
+  next_occurrence_at TIMESTAMPTZ NOT NULL,
+  total_occurrences INTEGER DEFAULT 0,
+  created_by UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Add indexes for recurring_tasks
+CREATE INDEX IF NOT EXISTS idx_recurring_tasks_household ON recurring_tasks(household_id);
+CREATE INDEX IF NOT EXISTS idx_recurring_tasks_active ON recurring_tasks(is_active, next_occurrence_at);
+CREATE INDEX IF NOT EXISTS idx_recurring_tasks_next ON recurring_tasks(next_occurrence_at) WHERE is_active = TRUE;
+
+-- Add recurring_task_id to tasks table
+ALTER TABLE tasks
+  ADD COLUMN IF NOT EXISTS recurring_task_id UUID REFERENCES recurring_tasks(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_tasks_recurring ON tasks(recurring_task_id);
 ```
 
 ---
