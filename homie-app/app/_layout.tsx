@@ -46,6 +46,13 @@ function NavigationContent() {
             animation: 'slide_from_bottom',
           }}
         />
+        <Stack.Screen
+          name="(modals)/create-task"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
       </Stack>
     </>
   );

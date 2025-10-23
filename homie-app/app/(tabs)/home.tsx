@@ -5,42 +5,85 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { useMyTasks } from '@/hooks/useTasks';
+import { useAuth } from '@/contexts/AuthContext';
 
-// Dummy data
+// TODO: Replace with actual household ID from context
+const TEMP_HOUSEHOLD_ID = 'temp-household-id';
+
+// Dummy captain data (will be implemented in EPIC 7)
 const currentCaptain = {
   name: 'Mom',
   avatar: '👩',
   daysLeft: 3,
 };
 
-const todayTasks = [
-  { id: '1', title: 'Clean Kitchen', room: 'Kitchen', icon: '🍳', points: 20, time: '2:00 PM' },
-  { id: '2', title: 'Take Out Trash', room: 'General', icon: '🗑️', points: 10, time: '5:00 PM' },
-];
-
+// Dummy stats (will be implemented in EPIC 9)
 const stats = {
-  points: 150,
-  streak: 5,
-  rank: 3,
+  points: 0,
+  streak: 0,
+  rank: 0,
 };
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { data: tasks = [], isLoading, refetch, isRefetching } = useMyTasks(TEMP_HOUSEHOLD_ID);
+
+  const handleCreateTask = () => {
+    router.push('/(modals)/create-task');
+  };
+
+  const getTaskIcon = (room?: string) => {
+    const icons: Record<string, string> = {
+      Kitchen: '🍳',
+      'Living Room': '🛋️',
+      Bedroom: '🛏️',
+      Bathroom: '🚿',
+      Garden: '🌱',
+    };
+    return icons[room || ''] || '📋';
+  };
+
+  const formatTime = (dueDate?: string) => {
+    if (!dueDate) return '';
+    const date = new Date(dueDate);
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  };
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Text style={styles.emptyIcon}>✅</Text>
+      <Text style={styles.emptyTitle}>No tasks yet!</Text>
+      <Text style={styles.emptyText}>
+        Tap the + button below to create your first task
+      </Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+        }
       >
         {/* Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Welcome back! 👋</Text>
-            <Text style={styles.householdName}>Smith Family</Text>
+            <Text style={styles.householdName}>
+              {user?.user_metadata?.full_name || 'User'}
+            </Text>
           </View>
           <TouchableOpacity style={styles.settingsButton}>
             <Ionicons name="settings-outline" size={24} color={Colors.text} />
@@ -70,27 +113,39 @@ export default function HomeScreen() {
         {/* My Tasks Today */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>My Tasks Today</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllButton}>See All</Text>
+            <Text style={styles.sectionTitle}>My Tasks</Text>
+            <TouchableOpacity onPress={handleCreateTask}>
+              <Text style={styles.seeAllButton}>+ New</Text>
             </TouchableOpacity>
           </View>
 
-          {todayTasks.map((task) => (
-            <TouchableOpacity key={task.id} style={styles.taskCard}>
-              <Text style={styles.taskIcon}>{task.icon}</Text>
-              <View style={styles.taskInfo}>
-                <Text style={styles.taskTitle}>{task.title}</Text>
-                <View style={styles.taskMeta}>
-                  <Text style={styles.taskRoom}>{task.room}</Text>
-                  <Text style={styles.taskTime}>{task.time}</Text>
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+            </View>
+          ) : tasks.length === 0 ? (
+            renderEmptyState()
+          ) : (
+            tasks.map((task) => (
+              <TouchableOpacity key={task.id} style={styles.taskCard}>
+                <Text style={styles.taskIcon}>{getTaskIcon(task.room)}</Text>
+                <View style={styles.taskInfo}>
+                  <Text style={styles.taskTitle}>{task.title}</Text>
+                  <View style={styles.taskMeta}>
+                    {task.room && (
+                      <Text style={styles.taskRoom}>{task.room}</Text>
+                    )}
+                    {task.due_date && (
+                      <Text style={styles.taskTime}>{formatTime(task.due_date)}</Text>
+                    )}
+                  </View>
                 </View>
-              </View>
-              <View style={styles.taskPoints}>
-                <Text style={styles.taskPointsText}>{task.points} pts</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+                <View style={styles.taskPoints}>
+                  <Text style={styles.taskPointsText}>{task.points} pts</Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
 
         {/* Quick Stats */}
@@ -107,14 +162,14 @@ export default function HomeScreen() {
           </View>
           <View style={styles.statCard}>
             <Ionicons name="trophy" size={20} color={Colors.primary} />
-            <Text style={styles.statValue}>#{stats.rank}</Text>
+            <Text style={styles.statValue}>#{stats.rank || '-'}</Text>
             <Text style={styles.statLabel}>Rank</Text>
           </View>
         </View>
       </ScrollView>
 
       {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab}>
+      <TouchableOpacity style={styles.fab} onPress={handleCreateTask}>
         <Ionicons name="add" size={28} color={Colors.white} />
       </TouchableOpacity>
     </SafeAreaView>
@@ -127,7 +182,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   scrollContent: {
-    paddingBottom: Spacing.xxl,
+    paddingBottom: Spacing.xxl * 2,
   },
   header: {
     flexDirection: 'row',
@@ -218,6 +273,31 @@ const styles = StyleSheet.create({
   seeAllButton: {
     ...Typography.bodyMedium,
     color: Colors.primary,
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    paddingVertical: Spacing.xxl,
+    alignItems: 'center',
+  },
+  emptyState: {
+    paddingVertical: Spacing.xxl,
+    paddingHorizontal: Spacing.xl,
+    alignItems: 'center',
+  },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: Spacing.md,
+  },
+  emptyTitle: {
+    ...Typography.h4,
+    color: Colors.text,
+    marginBottom: Spacing.sm,
+  },
+  emptyText: {
+    ...Typography.bodyMedium,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   taskCard: {
     backgroundColor: Colors.white,
