@@ -9,6 +9,7 @@ import { usePremiumStore } from '@/stores/premium.store';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { HouseholdProvider } from '@/contexts/HouseholdContext';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -99,14 +100,16 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <HouseholdProvider>
-            <NavigationContent />
-          </HouseholdProvider>
-        </QueryClientProvider>
-      </AuthProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <AuthProvider>
+          <QueryClientProvider client={queryClient}>
+            <HouseholdProvider>
+              <NavigationContent />
+            </HouseholdProvider>
+          </QueryClientProvider>
+        </AuthProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

@@ -15,6 +15,7 @@ import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/theme';
 import { useMyTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
+import { useTasksRealtime, useMembersRealtime } from '@/hooks/useRealtimeSubscription';
 
 // Dummy captain data (will be implemented in EPIC 7)
 const currentCaptain = {
@@ -38,6 +39,10 @@ export default function HomeScreen() {
     household?.id,
     member?.id
   );
+
+  // Real-time subscriptions
+  useTasksRealtime(household?.id);
+  useMembersRealtime(household?.id);
 
   const handleCreateTask = () => {
     router.push('/(modals)/create-task');
