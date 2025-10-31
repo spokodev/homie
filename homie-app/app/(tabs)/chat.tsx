@@ -358,9 +358,16 @@ export default function ChatScreen() {
                   size={16}
                   color={colors.primary.default}
                 />
-                <Text style={styles.inputModeText}>
-                  {editingMessage ? 'Editing message' : `Replying to ${replyingTo?.member_name}`}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputModeText}>
+                    {editingMessage ? 'Editing message' : `Replying to ${replyingTo?.member_name}`}
+                  </Text>
+                  {replyingTo && (
+                    <Text style={styles.inputModePreview} numberOfLines={1}>
+                      {replyingTo.content}
+                    </Text>
+                  )}
+                </View>
               </View>
               <TouchableOpacity
                 onPress={() => {
@@ -613,11 +620,17 @@ const createStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
+    flex: 1,
   },
   inputModeText: {
     ...Typography.bodySmall,
     color: colors.primary.default,
     fontWeight: '600',
+  },
+  inputModePreview: {
+    ...Typography.bodySmall,
+    color: colors.text.tertiary,
+    marginTop: 2,
   },
   inputRow: {
     flexDirection: 'row',
@@ -629,6 +642,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     color: colors.text.primary,
     backgroundColor: colors.surface.secondary,
     borderRadius: BorderRadius.large,
+    borderWidth: 1,
+    borderColor: colors.border.default,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     paddingTop: Spacing.sm,

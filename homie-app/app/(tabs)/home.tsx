@@ -471,6 +471,8 @@ const createStyles = (colors: any) => StyleSheet.create({
     borderRadius: BorderRadius.large,
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border.default,
     ...Shadows.medium,
   },
   captainBadge: {

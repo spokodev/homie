@@ -161,8 +161,8 @@ export const Shadows = {
       width: 0,
       height: 1,
     },
-    shadowOpacity: 0.18,
-    shadowRadius: 1.0,
+    shadowOpacity: 0.05,
+    shadowRadius: 2.0,
     elevation: 1,
   },
   medium: {
@@ -171,9 +171,9 @@ export const Shadows = {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 4.0,
+    elevation: 2,
   },
   large: {
     shadowColor: '#000',
@@ -181,11 +181,18 @@ export const Shadows = {
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.12,
+    shadowRadius: 6.0,
+    elevation: 4,
   },
 } as const;
+
+// Helper function to create card style with borders for better visibility
+export const createCardStyle = (borderColor: string = Colors.border) => ({
+  borderWidth: 1,
+  borderColor,
+  ...Shadows.small,
+});
 
 export const Animations = {
   instant: 100,
