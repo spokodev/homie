@@ -10,7 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { TextInput } from '@/components/Form/TextInput';
 import { Button } from '@/components/Button';
 import { useToast } from '@/components/Toast';
@@ -22,6 +23,7 @@ import { logError } from '@/utils/errorHandling';
 
 export default function AddRoomScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { household } = useHousehold();
   const { showToast } = useToast();
   const createRoom = useCreateRoom();
@@ -70,12 +72,14 @@ export default function AddRoomScreen() {
     }
   };
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color={Colors.text} />
+          <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.title}>Add Room</Text>
         <View style={styles.closeButton} />
@@ -147,7 +151,7 @@ export default function AddRoomScreen() {
 
         {/* Info */}
         <View style={styles.infoBox}>
-          <Ionicons name="information-circle-outline" size={20} color={Colors.primary} />
+          <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
           <Text style={styles.infoText}>
             Rooms help you organize tasks and notes by location in your home.
           </Text>
@@ -162,9 +166,9 @@ export default function AddRoomScreen() {
           disabled={isSubmitting || !roomName.trim()}
           leftIcon={
             isSubmitting ? (
-              <ActivityIndicator size="small" color={Colors.white} />
+              <ActivityIndicator size="small" color={colors.card} />
             ) : (
-              <Ionicons name="add" size={20} color={Colors.white} />
+              <Ionicons name="add" size={20} color={colors.card} />
             )
           }
         />
@@ -179,19 +183,19 @@ const COMMON_ICONS = [
   '🔧', '🎵', '☕', '🍕', '🎬', '🏡', '🌸', '🎯',
 ];
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Spacing.lg,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
+    borderBottomColor: colors.border,
   },
   closeButton: {
     width: 40,
@@ -201,7 +205,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   content: {
     flex: 1,
@@ -212,7 +216,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...Typography.h5,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.md,
   },
   presetsGrid: {
@@ -226,15 +230,15 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.medium,
     margin: Spacing.xs,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   presetCardActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '10',
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '10',
   },
   presetIcon: {
     fontSize: 28,
@@ -242,14 +246,14 @@ const styles = StyleSheet.create({
   },
   presetName: {
     ...Typography.labelSmall,
-    color: Colors.text,
+    color: colors.text,
     textAlign: 'center',
   },
   iconPreview: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: Colors.accent + '20',
+    backgroundColor: colors.accent + '20',
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
@@ -263,11 +267,11 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.labelLarge,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.sm,
   },
   required: {
-    color: Colors.error,
+    color: colors.error,
   },
   iconScroll: {
     marginHorizontal: -Spacing.lg,
@@ -277,7 +281,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: BorderRadius.medium,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.sm,
@@ -285,15 +289,15 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   iconButtonActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '10',
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '10',
   },
   iconButtonText: {
     fontSize: 28,
   },
   infoBox: {
     flexDirection: 'row',
-    backgroundColor: Colors.primary + '10',
+    backgroundColor: colors.primary + '10',
     padding: Spacing.md,
     borderRadius: BorderRadius.medium,
     gap: Spacing.sm,
@@ -301,13 +305,13 @@ const styles = StyleSheet.create({
   },
   infoText: {
     ...Typography.bodySmall,
-    color: Colors.text,
+    color: colors.text,
     flex: 1,
   },
   footer: {
     padding: Spacing.lg,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray300,
+    borderTopColor: colors.border,
   },
 });

@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useMembers } from '@/hooks/useMembers';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useMembersRealtime } from '@/hooks/useRealtimeSubscription';
@@ -23,8 +24,10 @@ import {
 } from '@/utils/gamification';
 
 export default function LeaderboardScreen() {
+  const colors = useThemeColors();
   const { household, member: currentMember } = useHousehold();
   const { data: members = [], isLoading, refetch, isRefetching, error, isError } = useMembers(household?.id);
+  const styles = createStyles(colors);
 
   // Real-time updates
   useMembersRealtime(household?.id);
@@ -79,7 +82,7 @@ export default function LeaderboardScreen() {
           {/* Stats Row */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Ionicons name="star" size={16} color={Colors.accent} />
+              <Ionicons name="star" size={16} color={colors.accent} />
               <Text style={styles.statValue}>{member.points}</Text>
               <Text style={styles.statLabel}>points</Text>
             </View>
@@ -133,7 +136,7 @@ export default function LeaderboardScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -171,10 +174,10 @@ export default function LeaderboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -185,16 +188,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray200,
-    backgroundColor: Colors.white,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
   title: {
     ...Typography.h2,
-    color: Colors.text,
+    color: colors.text,
   },
   subtitle: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: Spacing.xs,
   },
   scrollContent: {
@@ -204,7 +207,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   memberCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.large,
     padding: Spacing.md,
     flexDirection: 'row',
@@ -213,19 +216,19 @@ const styles = StyleSheet.create({
   },
   currentMemberCard: {
     borderWidth: 2,
-    borderColor: Colors.primary,
+    borderColor: colors.primary,
   },
   rankBadge: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Colors.gray200,
+    backgroundColor: colors.gray200,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
   },
   topRankBadge: {
-    backgroundColor: Colors.accent + '30',
+    backgroundColor: colors.accent + '30',
   },
   rankText: {
     fontSize: 20,
@@ -253,18 +256,18 @@ const styles = StyleSheet.create({
   },
   memberName: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600',
   },
   currentUserName: {
-    color: Colors.primary,
+    color: colors.primary,
   },
   adminBadge: {
     fontSize: 16,
   },
   levelTitle: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   statsRow: {
@@ -280,12 +283,12 @@ const styles = StyleSheet.create({
   },
   statValue: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600',
   },
   statLabel: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   levelBadge: {
     paddingHorizontal: Spacing.sm,
@@ -307,7 +310,7 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 6,
-    backgroundColor: Colors.gray200,
+    backgroundColor: colors.gray200,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -317,7 +320,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     minWidth: 36,
     textAlign: 'right',
   },
@@ -331,12 +334,12 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.sm,
   },
   emptyText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
 });

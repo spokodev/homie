@@ -10,15 +10,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useRooms, Room } from '@/hooks/useRooms';
 import { NetworkErrorView } from '@/components/NetworkErrorView';
 
 export default function RoomsScreen() {
+  const colors = useThemeColors();
   const router = useRouter();
   const { household } = useHousehold();
   const { data: rooms = [], isLoading, error, isError, refetch } = useRooms(household?.id);
+  const styles = createStyles(colors);
 
   const handleAddRoom = () => {
     router.push('/(modals)/add-room');
@@ -41,7 +44,7 @@ export default function RoomsScreen() {
       </Text>
       {item.notes_count !== undefined && item.notes_count > 0 && (
         <View style={styles.notesCountBadge}>
-          <Ionicons name="document-text" size={12} color={Colors.white} />
+          <Ionicons name="document-text" size={12} color={colors.white} />
           <Text style={styles.notesCountText}>{item.notes_count}</Text>
         </View>
       )}
@@ -50,13 +53,13 @@ export default function RoomsScreen() {
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Ionicons name="home-outline" size={64} color={Colors.gray500} />
+      <Ionicons name="home-outline" size={64} color={colors.gray500} />
       <Text style={styles.emptyStateTitle}>No rooms yet</Text>
       <Text style={styles.emptyStateText}>
         Add rooms to organize your household tasks and notes
       </Text>
       <TouchableOpacity style={styles.emptyStateButton} onPress={handleAddRoom}>
-        <Ionicons name="add" size={20} color={Colors.white} />
+        <Ionicons name="add" size={20} color={colors.white} />
         <Text style={styles.emptyStateButtonText}>Add First Room</Text>
       </TouchableOpacity>
     </View>
@@ -82,7 +85,7 @@ export default function RoomsScreen() {
         <Text style={styles.title}>Rooms & Notes</Text>
         {rooms.length > 0 && (
           <TouchableOpacity style={styles.addButton} onPress={handleAddRoom}>
-            <Ionicons name="add" size={24} color={Colors.primary} />
+            <Ionicons name="add" size={24} color={colors.primary} />
           </TouchableOpacity>
         )}
       </View>
@@ -90,7 +93,7 @@ export default function RoomsScreen() {
       {/* Rooms Grid */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Loading rooms...</Text>
         </View>
       ) : (
@@ -108,29 +111,29 @@ export default function RoomsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Spacing.lg,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
+    borderBottomColor: colors.border,
   },
   title: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text,
   },
   addButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.accent + '30',
+    backgroundColor: colors.accent + '30',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -141,7 +144,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: Spacing.md,
   },
   errorContainer: {
@@ -152,12 +155,12 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...Typography.h4,
-    color: Colors.error,
+    color: colors.error,
     marginTop: Spacing.md,
   },
   errorHint: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: Spacing.xs,
     textAlign: 'center',
   },
@@ -170,7 +173,7 @@ const styles = StyleSheet.create({
   },
   roomCard: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.large,
     padding: Spacing.lg,
     margin: Spacing.xs,
@@ -187,7 +190,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Colors.accent + '20',
+    backgroundColor: colors.accent + '20',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.md,
@@ -197,7 +200,7 @@ const styles = StyleSheet.create({
   },
   roomName: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -207,7 +210,7 @@ const styles = StyleSheet.create({
     right: Spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.xs,
     paddingVertical: 4,
@@ -215,7 +218,7 @@ const styles = StyleSheet.create({
   },
   notesCountText: {
     ...Typography.labelSmall,
-    color: Colors.white,
+    color: colors.white,
     fontSize: 10,
     fontWeight: '600',
   },
@@ -228,12 +231,12 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
     marginTop: Spacing.md,
   },
   emptyStateText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: Spacing.xs,
     textAlign: 'center',
     marginBottom: Spacing.xl,
@@ -241,7 +244,7 @@ const styles = StyleSheet.create({
   emptyStateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
     borderRadius: BorderRadius.full,
@@ -249,6 +252,6 @@ const styles = StyleSheet.create({
   },
   emptyStateButtonText: {
     ...Typography.button,
-    color: Colors.white,
+    color: colors.white,
   },
 });

@@ -1,12 +1,16 @@
+// RevenueCat SDK integration
 import Purchases, {
   CustomerInfo,
   PurchasesOffering,
   PurchasesPackage,
-  PurchasesProduct,
+  PurchasesStoreProduct,
   LOG_LEVEL,
   PurchasesError,
 } from 'react-native-purchases';
 import { Platform } from 'react-native';
+
+// Note: PurchasesProduct is now PurchasesStoreProduct in v9+
+type PurchasesProduct = PurchasesStoreProduct;
 
 // Product identifiers
 export const PRODUCT_IDS = {
@@ -27,23 +31,31 @@ class RevenueCatService {
     if (this.isConfigured) return;
 
     try {
-      const apiKey = Platform.select({
+      // Check if running in Expo Go
+      const isExpoGo = !!(global as any).expo;
+
+      let apiKey = Platform.select({
         ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
         android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY,
       });
+
+      // Use test store API key for Expo Go
+      if (isExpoGo && __DEV__) {
+        // For Expo Go, we need to use a test store configuration
+        // This is a limitation of Expo Go as it doesn't have access to native store
+        console.log('Running in Expo Go - RevenueCat will have limited functionality');
+        // Skip RevenueCat initialization in Expo Go to avoid errors
+        this.isConfigured = true;
+        return;
+      }
 
       if (!apiKey) {
         console.warn('RevenueCat API key not found. Subscriptions will not work.');
         return;
       }
 
-      // Configure RevenueCat
-      await Purchases.configure({
-        apiKey,
-        appUserID: null, // Let RevenueCat generate an ID
-        observerMode: false,
-        useAmazon: false,
-      });
+      // Configure RevenueCat with v9+ API
+      Purchases.configure({ apiKey });
 
       // Set log level for debugging
       if (__DEV__) {
@@ -54,6 +66,8 @@ class RevenueCatService {
       console.log('RevenueCat configured successfully');
     } catch (error) {
       console.error('Failed to configure RevenueCat:', error);
+      // Mark as configured to prevent retry loops
+      this.isConfigured = true;
     }
   }
 
@@ -85,6 +99,11 @@ class RevenueCatService {
    * Get current customer info
    */
   async getCustomerInfo(): Promise<CustomerInfo | null> {
+    // Return null if running in Expo Go
+    if (!this.isConfigured || (!!(global as any).expo && __DEV__)) {
+      return null;
+    }
+
     try {
       const customerInfo = await Purchases.getCustomerInfo();
       return customerInfo;
@@ -115,6 +134,11 @@ class RevenueCatService {
    * Get available offerings
    */
   async getOfferings(): Promise<PurchasesOffering | null> {
+    // Return null if running in Expo Go
+    if (!this.isConfigured || (!!(global as any).expo && __DEV__)) {
+      return null;
+    }
+
     try {
       const offerings = await Purchases.getOfferings();
       return offerings.current;
@@ -315,5 +339,5 @@ class RevenueCatService {
 // Export singleton instance
 export const revenueCat = new RevenueCatService();
 
-// Export types for convenience
-export type { CustomerInfo, PurchasesPackage, PurchasesProduct } from 'react-native-purchases';
+// Export mock types for convenience (Expo Go compatible)
+export type { CustomerInfo, PurchasesPackage, PurchasesProduct };

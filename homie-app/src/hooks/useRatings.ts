@@ -196,6 +196,7 @@ export function useRateCaptain() {
       if (insertError) throw insertError;
 
       // Recalculate household captain rating stats
+      // Include the newly inserted rating by querying again after insert
       const { data: allRatings } = await supabase
         .from('captain_ratings')
         .select('rating')
@@ -203,6 +204,7 @@ export function useRateCaptain() {
         .eq('rotation_start', input.rotation_start);
 
       if (allRatings && allRatings.length > 0) {
+        // The new rating should be included in allRatings now
         const totalRatings = allRatings.length;
         const sumRatings = allRatings.reduce((sum, r) => sum + r.rating, 0);
         const avgRating = sumRatings / totalRatings;

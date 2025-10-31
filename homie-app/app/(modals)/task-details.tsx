@@ -11,7 +11,8 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useCompleteTask, useDeleteTask, useUpdateTask, Task } from '@/hooks/useTasks';
@@ -21,15 +22,21 @@ import { useToast } from '@/components/Toast';
 import { ConfirmDialog } from '@/components/Modal/ConfirmDialog';
 import { MemberPermissions } from '@/utils/permissions';
 import { TASK_CATEGORIES, TaskCategoryId } from '@/constants';
+import { useSubtasks, useToggleSubtaskCompletion, calculateTaskPoints } from '@/hooks/useSubtasks';
+import { PhotoUpload } from '@/components/PhotoUpload/PhotoUpload';
+import { useTaskPhotos } from '@/hooks/useTaskPhotos';
+import { useCreateTaskTemplate } from '@/hooks/useTaskTemplates';
 
 export default function TaskDetailsScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const params = useLocalSearchParams<{ taskId: string }>();
   const { household, member } = useHousehold();
   const { showToast } = useToast();
   const completeTask = useCompleteTask();
   const deleteTask = useDeleteTask();
   const updateTask = useUpdateTask();
+  const createTemplate = useCreateTaskTemplate();
   const { data: members = [] } = useMembers(household?.id);
   const [completing, setCompleting] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
@@ -37,7 +44,16 @@ export default function TaskDetailsScreen() {
   const [showAssigneeDialog, setShowAssigneeDialog] = useState(false);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [showDueDateDialog, setShowDueDateDialog] = useState(false);
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
   const [editingDueDate, setEditingDueDate] = useState<Date | undefined>(undefined);
+  const [completedSubtaskIds, setCompletedSubtaskIds] = useState<string[]>([]);
+
+  // Fetch subtasks
+  const { data: subtasks = [] } = useSubtasks(params.taskId);
+  const toggleSubtaskCompletion = useToggleSubtaskCompletion();
+
+  // Fetch photos (for future photo gallery feature)
+  const { data: _photos = [] } = useTaskPhotos(params.taskId);
 
   // Fetch task details
   const { data: task, isLoading, refetch } = useQuery<Task>({
@@ -118,12 +134,28 @@ export default function TaskDetailsScreen() {
 
     setCompleting(true);
     try {
+      // Calculate points based on subtasks or time
+      let points = task.points;
+      if (subtasks.length > 0) {
+        points = calculateTaskPoints(subtasks, completedSubtaskIds);
+      }
+
+      // Update completed subtasks in database
+      if (subtasks.length > 0) {
+        for (const subtaskId of completedSubtaskIds) {
+          await toggleSubtaskCompletion.mutateAsync({
+            subtaskId,
+            isCompleted: true,
+          });
+        }
+      }
+
       await completeTask.mutateAsync({
         taskId: task.id,
         actualMinutes: task.estimated_minutes,
       });
 
-      showToast(`+${task.points} points earned! 🎉`, 'success');
+      showToast(`+${points} points earned! 🎉`, 'success');
       router.back();
     } catch (error: any) {
       showToast(error.message || 'Failed to complete task', 'error');
@@ -222,6 +254,27 @@ export default function TaskDetailsScreen() {
     }
   };
 
+  const handleSaveAsTemplate = async () => {
+    if (!task || !household) return;
+
+    try {
+      await createTemplate.mutateAsync({
+        household_id: household.id,
+        name: task.title,
+        icon: '⭐', // Default icon, user can change later
+        description: task.description || undefined,
+        estimated_minutes: task.estimated_minutes || undefined,
+        points: task.points,
+        is_system: false,
+      });
+
+      showToast('Template saved successfully!', 'success');
+      setShowSaveTemplateDialog(false);
+    } catch (error: any) {
+      showToast(error.message || 'Failed to save template', 'error');
+    }
+  };
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'No due date';
     const date = new Date(dateString);
@@ -235,11 +288,11 @@ export default function TaskDetailsScreen() {
   const getStatusColor = (status?: string) => {
     switch (status) {
       case 'completed':
-        return Colors.success;
+        return colors.success;
       case 'in_progress':
-        return Colors.warning;
+        return colors.warning;
       default:
-        return Colors.gray400;
+        return colors.gray400;
     }
   };
 
@@ -254,11 +307,13 @@ export default function TaskDetailsScreen() {
     }
   };
 
+  const styles = createStyles(colors);
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -287,14 +342,14 @@ export default function TaskDetailsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color={Colors.text} />
+          <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Task Details</Text>
         <TouchableOpacity onPress={handleEdit} disabled={isCompleted}>
           <Ionicons
             name="pencil"
             size={24}
-            color={isCompleted ? Colors.gray400 : Colors.primary}
+            color={isCompleted ? colors.gray400 : colors.primary}
           />
         </TouchableOpacity>
       </View>
@@ -318,25 +373,87 @@ export default function TaskDetailsScreen() {
           </View>
         )}
 
+        {/* Subtasks */}
+        {subtasks.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Subtasks ({completedSubtaskIds.length}/{subtasks.length})
+            </Text>
+            <View style={styles.subtasksList}>
+              {subtasks.map((subtask) => {
+                const isChecked = completedSubtaskIds.includes(subtask.id);
+                return (
+                  <TouchableOpacity
+                    key={subtask.id}
+                    style={styles.subtaskItem}
+                    onPress={() => {
+                      if (!isCompleted) {
+                        setCompletedSubtaskIds(prev =>
+                          isChecked
+                            ? prev.filter(id => id !== subtask.id)
+                            : [...prev, subtask.id]
+                        );
+                      }
+                    }}
+                    disabled={isCompleted}
+                  >
+                    <Ionicons
+                      name={isChecked ? 'checkbox' : 'square-outline'}
+                      size={24}
+                      color={isChecked ? colors.primary : colors.gray400}
+                    />
+                    <Text
+                      style={[
+                        styles.subtaskTitle,
+                        isChecked && styles.subtaskCompleted,
+                      ]}
+                    >
+                      {subtask.title}
+                    </Text>
+                    <Text style={styles.subtaskPoints}>{subtask.points} pts</Text>
+                  </TouchableOpacity>
+                );
+              })}
+              {/* Show total points when subtasks are selected */}
+              {completedSubtaskIds.length > 0 && (
+                <View style={styles.subtasksTotalRow}>
+                  <Text style={styles.subtasksTotalLabel}>Points to earn:</Text>
+                  <Text style={styles.subtasksTotalValue}>
+                    {calculateTaskPoints(subtasks, completedSubtaskIds)} pts
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Photos */}
+        <View style={styles.section}>
+          <PhotoUpload
+            taskId={params.taskId}
+            disabled={isCompleted}
+          />
+        </View>
+
         {/* Details Grid */}
         <View style={styles.detailsGrid}>
           {/* Points */}
           <View style={styles.detailCard}>
-            <Ionicons name="star" size={20} color={Colors.accent} />
+            <Ionicons name="star" size={20} color={colors.accent} />
             <Text style={styles.detailValue}>{task.points}</Text>
             <Text style={styles.detailLabel}>Points</Text>
           </View>
 
           {/* Time */}
           <View style={styles.detailCard}>
-            <Ionicons name="time" size={20} color={Colors.secondary} />
+            <Ionicons name="time" size={20} color={colors.secondary} />
             <Text style={styles.detailValue}>{task.estimated_minutes || '-'}</Text>
             <Text style={styles.detailLabel}>Minutes</Text>
           </View>
 
           {/* Room */}
           <View style={styles.detailCard}>
-            <Ionicons name="location" size={20} color={Colors.primary} />
+            <Ionicons name="location" size={20} color={colors.primary} />
             <Text style={styles.detailValue}>{task.room || '🏠'}</Text>
             <Text style={styles.detailLabel}>Room</Text>
           </View>
@@ -366,7 +483,7 @@ export default function TaskDetailsScreen() {
             })()
           ) : (
             <View style={[styles.assigneeCard, styles.unassignedCard]}>
-              <Ionicons name="apps-outline" size={20} color={Colors.textSecondary} />
+              <Ionicons name="apps-outline" size={20} color={colors.textSecondary} />
               <Text style={styles.unassignedText}>No category assigned</Text>
             </View>
           )}
@@ -411,7 +528,7 @@ export default function TaskDetailsScreen() {
             )}
           </View>
           <View style={styles.dateCard}>
-            <Ionicons name="calendar" size={20} color={Colors.primary} />
+            <Ionicons name="calendar" size={20} color={colors.primary} />
             <Text style={styles.dateText}>{formatDate(task.due_date)}</Text>
           </View>
         </View>
@@ -419,7 +536,7 @@ export default function TaskDetailsScreen() {
         {/* Completion Info */}
         {isCompleted && (
           <View style={styles.completionCard}>
-            <Ionicons name="checkmark-circle" size={24} color={Colors.success} />
+            <Ionicons name="checkmark-circle" size={24} color={colors.success} />
             <Text style={styles.completionText}>
               Completed on {formatDate(task.completed_at)}
             </Text>
@@ -435,7 +552,7 @@ export default function TaskDetailsScreen() {
             style={styles.startButton}
             onPress={handleStartTask}
           >
-            <Ionicons name="play-circle" size={20} color={Colors.white} />
+            <Ionicons name="play-circle" size={20} color={colors.card} />
             <Text style={styles.startButtonText}>Start Task</Text>
           </TouchableOpacity>
         )}
@@ -448,18 +565,30 @@ export default function TaskDetailsScreen() {
             disabled={completing}
           >
             {completing ? (
-              <ActivityIndicator color={Colors.white} />
+              <ActivityIndicator color={colors.card} />
             ) : (
               <>
-                <Ionicons name="checkmark-circle" size={20} color={Colors.white} />
+                <Ionicons name="checkmark-circle" size={20} color={colors.card} />
                 <Text style={styles.completeButtonText}>Complete Task</Text>
               </>
             )}
           </TouchableOpacity>
         )}
 
+        {/* Save as Template button */}
+        {!isCompleted && (
+          <TouchableOpacity
+            style={styles.templateButton}
+            onPress={() => setShowSaveTemplateDialog(true)}
+            disabled={createTemplate.isPending}
+          >
+            <Ionicons name="bookmark-outline" size={20} color={colors.secondary} />
+            <Text style={styles.templateButtonText}>Save as Template</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity style={styles.deleteButton} onPress={() => setShowDeleteDialog(true)}>
-          <Ionicons name="trash" size={20} color={Colors.error} />
+          <Ionicons name="trash" size={20} color={colors.error} />
           <Text style={styles.deleteButtonText}>Delete</Text>
         </TouchableOpacity>
       </View>
@@ -488,6 +617,17 @@ export default function TaskDetailsScreen() {
         loading={deleteTask.isPending}
       />
 
+      <ConfirmDialog
+        visible={showSaveTemplateDialog}
+        onClose={() => setShowSaveTemplateDialog(false)}
+        onConfirm={handleSaveAsTemplate}
+        title="Save as Template"
+        message={`Save "${task?.title}" as a reusable template? You can use it to quickly create similar tasks in the future.`}
+        confirmText="Save Template"
+        icon="bookmark"
+        loading={createTemplate.isPending}
+      />
+
       {/* Assignee Selection Modal */}
       {showAssigneeDialog && (
         <View style={styles.assigneeModal}>
@@ -495,7 +635,7 @@ export default function TaskDetailsScreen() {
             <View style={styles.assigneeModalHeader}>
               <Text style={styles.assigneeModalTitle}>Assign Task</Text>
               <TouchableOpacity onPress={() => setShowAssigneeDialog(false)}>
-                <Ionicons name="close" size={24} color={Colors.text} />
+                <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -510,7 +650,7 @@ export default function TaskDetailsScreen() {
                   <Text style={styles.assigneeOptionName}>Anyone</Text>
                   <Text style={styles.assigneeOptionDesc}>Unassigned</Text>
                 </View>
-                {!task?.assignee_id && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
+                {!task?.assignee_id && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
               </TouchableOpacity>
 
               {/* Member options */}
@@ -525,7 +665,7 @@ export default function TaskDetailsScreen() {
                     <Text style={styles.assigneeOptionName}>{m.name}</Text>
                     <Text style={styles.assigneeOptionDesc}>{m.type === 'pet' ? 'Pet' : 'Member'}</Text>
                   </View>
-                  {task?.assignee_id === m.id && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
+                  {task?.assignee_id === m.id && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -540,7 +680,7 @@ export default function TaskDetailsScreen() {
             <View style={styles.assigneeModalHeader}>
               <Text style={styles.assigneeModalTitle}>Select Category</Text>
               <TouchableOpacity onPress={() => setShowCategoryDialog(false)}>
-                <Ionicons name="close" size={24} color={Colors.text} />
+                <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -550,12 +690,12 @@ export default function TaskDetailsScreen() {
                 style={styles.assigneeOption}
                 onPress={() => handleUpdateCategory(null)}
               >
-                <Ionicons name="close-circle-outline" size={24} color={Colors.textSecondary} style={{marginRight: 12}} />
+                <Ionicons name="close-circle-outline" size={24} color={colors.textSecondary} style={{marginRight: 12}} />
                 <View style={styles.assigneeOptionInfo}>
                   <Text style={styles.assigneeOptionName}>No Category</Text>
                   <Text style={styles.assigneeOptionDesc}>Remove category</Text>
                 </View>
-                {!task?.category && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
+                {!task?.category && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
               </TouchableOpacity>
 
               {/* Category options */}
@@ -574,7 +714,7 @@ export default function TaskDetailsScreen() {
                       </Text>
                     </View>
                   </View>
-                  {task?.category === cat.id && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
+                  {task?.category === cat.id && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -590,7 +730,7 @@ export default function TaskDetailsScreen() {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Set Due Date</Text>
                 <TouchableOpacity onPress={() => setShowDueDateDialog(false)}>
-                  <Ionicons name="close" size={24} color={Colors.text} />
+                  <Ionicons name="close" size={24} color={colors.text} />
                 </TouchableOpacity>
               </View>
 
@@ -672,10 +812,10 @@ export default function TaskDetailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -690,18 +830,18 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...Typography.h4,
-    color: Colors.error,
+    color: colors.error,
     marginBottom: Spacing.lg,
   },
   backButton: {
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: BorderRadius.full,
   },
   backButtonText: {
     ...Typography.button,
-    color: Colors.white,
+    color: colors.card,
   },
   header: {
     flexDirection: 'row',
@@ -710,12 +850,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray200,
-    backgroundColor: Colors.white,
+    borderBottomColor: colors.gray200,
+    backgroundColor: colors.card,
   },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   scrollView: {
     flex: 1,
@@ -728,7 +868,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h2,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.sm,
   },
   statusBadge: {
@@ -746,7 +886,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...Typography.labelLarge,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.sm,
   },
   sectionHeader: {
@@ -757,12 +897,12 @@ const styles = StyleSheet.create({
   },
   changeButton: {
     ...Typography.bodyMedium,
-    color: Colors.primary,
+    color: colors.primary,
     fontWeight: '600',
   },
   descriptionText: {
     ...Typography.bodyLarge,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 24,
   },
   detailsGrid: {
@@ -772,7 +912,7 @@ const styles = StyleSheet.create({
   },
   detailCard: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     alignItems: 'center',
@@ -784,17 +924,17 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text,
     marginVertical: Spacing.xs,
   },
   detailLabel: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   assigneeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     shadowColor: '#000',
@@ -809,17 +949,17 @@ const styles = StyleSheet.create({
   },
   assigneeName: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '500',
   },
   unassignedCard: {
     borderWidth: 2,
-    borderColor: Colors.gray300,
+    borderColor: colors.gray300,
     borderStyle: 'dashed',
   },
   unassignedText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   assigneeModal: {
     position: 'absolute',
@@ -831,7 +971,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   assigneeModalContent: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderTopLeftRadius: BorderRadius.large,
     borderTopRightRadius: BorderRadius.large,
     maxHeight: '80%',
@@ -842,11 +982,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
+    borderBottomColor: colors.gray300,
   },
   assigneeModalTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   assigneeList: {
     maxHeight: 400,
@@ -856,7 +996,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray200,
+    borderBottomColor: colors.gray200,
   },
   assigneeOptionAvatar: {
     fontSize: 32,
@@ -867,17 +1007,17 @@ const styles = StyleSheet.create({
   },
   assigneeOptionName: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '500',
   },
   assigneeOptionDesc: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   dateCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     shadowColor: '#000',
@@ -888,69 +1028,84 @@ const styles = StyleSheet.create({
   },
   dateText: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text,
     marginLeft: Spacing.md,
   },
   completionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.success + '20',
+    backgroundColor: colors.success + '20',
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
   },
   completionText: {
     ...Typography.bodyLarge,
-    color: Colors.success,
+    color: colors.success,
     marginLeft: Spacing.md,
     fontWeight: '600',
   },
   actionsContainer: {
     padding: Spacing.lg,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray200,
+    borderTopColor: colors.gray200,
     gap: Spacing.sm,
   },
   startButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.full,
     gap: Spacing.sm,
   },
   startButtonText: {
     ...Typography.button,
-    color: Colors.white,
+    color: colors.card,
   },
   completeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.success,
+    backgroundColor: colors.success,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.full,
     gap: Spacing.sm,
   },
   completeButtonText: {
     ...Typography.button,
-    color: Colors.white,
+    color: colors.card,
+  },
+  templateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.card,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    gap: Spacing.sm,
+  },
+  templateButtonText: {
+    ...Typography.button,
+    color: colors.secondary,
   },
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: Colors.error,
+    borderColor: colors.error,
     gap: Spacing.sm,
   },
   deleteButtonText: {
     ...Typography.button,
-    color: Colors.error,
+    color: colors.error,
   },
   // Category styles
   categoryCard: {
@@ -984,7 +1139,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderTopLeftRadius: BorderRadius.large,
     borderTopRightRadius: BorderRadius.large,
     maxHeight: '70%',
@@ -995,11 +1150,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
+    borderBottomColor: colors.gray300,
   },
   modalTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   datePickerContainer: {
     padding: Spacing.lg,
@@ -1011,7 +1166,7 @@ const styles = StyleSheet.create({
   },
   presetButton: {
     flex: 1,
-    backgroundColor: Colors.primary + '15',
+    backgroundColor: colors.primary + '15',
     borderRadius: BorderRadius.medium,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.sm,
@@ -1019,18 +1174,18 @@ const styles = StyleSheet.create({
   },
   presetButtonText: {
     ...Typography.bodyMedium,
-    color: Colors.primary,
+    color: colors.primary,
     fontWeight: '600',
     textAlign: 'center',
   },
   currentDateLabel: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginBottom: Spacing.xs,
   },
   currentDateText: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.lg,
   },
   modalActions: {
@@ -1039,24 +1194,72 @@ const styles = StyleSheet.create({
   },
   modalButtonPrimary: {
     flex: 1,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: BorderRadius.medium,
     paddingVertical: Spacing.md,
     alignItems: 'center',
   },
   modalButtonPrimaryText: {
     ...Typography.button,
-    color: Colors.white,
+    color: colors.card,
   },
   modalButtonSecondary: {
     flex: 1,
-    backgroundColor: Colors.gray300,
+    backgroundColor: colors.gray300,
     borderRadius: BorderRadius.medium,
     paddingVertical: Spacing.md,
     alignItems: 'center',
   },
   modalButtonSecondaryText: {
     ...Typography.button,
-    color: Colors.text,
+    color: colors.text,
+  },
+  // Subtasks styles
+  subtasksList: {
+    backgroundColor: colors.gray100,
+    borderRadius: BorderRadius.medium,
+    padding: Spacing.sm,
+  },
+  subtaskItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: BorderRadius.small,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  subtaskTitle: {
+    ...Typography.bodyLarge,
+    color: colors.text,
+    flex: 1,
+    marginLeft: Spacing.sm,
+  },
+  subtaskCompleted: {
+    textDecorationLine: 'line-through',
+    color: colors.textSecondary,
+  },
+  subtaskPoints: {
+    ...Typography.labelMedium,
+    color: colors.accent,
+    fontWeight: '600',
+  },
+  subtasksTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.primary + '10',
+    borderRadius: BorderRadius.small,
+    padding: Spacing.md,
+    marginTop: Spacing.xs,
+  },
+  subtasksTotalLabel: {
+    ...Typography.bodyMedium,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  subtasksTotalValue: {
+    ...Typography.h5,
+    color: colors.primary,
+    fontWeight: 'bold',
   },
 });

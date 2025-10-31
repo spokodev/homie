@@ -5,22 +5,26 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react-native';
-import { Colors } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { usePremiumStore } from '@/stores/premium.store';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { HouseholdProvider } from '@/contexts/HouseholdContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ToastProvider } from '@/components/Toast';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { initializeAnalytics } from '@/utils/analytics';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useGenerateRecurringTaskInstances } from '@/hooks/useRecurringTasks';
+import { useDeepLinking } from '@/hooks/useDeepLinking';
+import { startNotificationProcessor } from '@/services/notificationService';
 
 // Initialize Sentry
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',
-  enabled: !__DEV__, // Only enable in production
+  enabled: true, // Enable in both development and production
   tracesSampleRate: 1.0, // Capture 100% of transactions for performance monitoring
-  debug: false, // Set to true for debugging
+  debug: __DEV__, // Enable debug logs in development
   environment: __DEV__ ? 'development' : 'production',
   enableAutoSessionTracking: true,
   sessionTrackingIntervalMillis: 30000, // 30 seconds
@@ -53,26 +57,34 @@ const queryClient = new QueryClient({
 function NavigationContent() {
   useProtectedRoute(); // Protect routes based on auth state
   useNotifications(); // Initialize notification listeners
+  useDeepLinking(); // Handle deep links for email verification and password reset
+  const colors = useThemeColors();
 
   const generateRecurringTasks = useGenerateRecurringTaskInstances();
 
-  // Auto-generate recurring tasks on app start
+  // Auto-generate recurring tasks and start notification processor on app start
   useEffect(() => {
     const timer = setTimeout(() => {
       generateRecurringTasks.mutate();
     }, 2000); // Wait 2 seconds after app starts
 
-    return () => clearTimeout(timer);
+    // Start notification processor
+    const stopProcessor = startNotificationProcessor();
+
+    return () => {
+      clearTimeout(timer);
+      stopProcessor();
+    };
   }, []);
 
   return (
     <>
-      <StatusBar style="dark" backgroundColor={Colors.background} />
+      <StatusBar style="auto" />
       <Stack
         screenOptions={{
           headerShown: false,
           contentStyle: {
-            backgroundColor: Colors.background,
+            backgroundColor: colors.background.primary,
           },
           animation: 'slide_from_right',
         }}
@@ -172,13 +184,17 @@ function RootLayoutComponent() {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <AuthProvider>
-          <QueryClientProvider client={queryClient}>
-            <HouseholdProvider>
-              <NavigationContent />
-            </HouseholdProvider>
-          </QueryClientProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <QueryClientProvider client={queryClient}>
+                <HouseholdProvider>
+                  <NavigationContent />
+                </HouseholdProvider>
+              </QueryClientProvider>
+            </AuthProvider>
+          </ToastProvider>
+        </ThemeProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
   );

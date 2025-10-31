@@ -149,7 +149,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     duration: 3000,
   });
 
-  const showToast = (message: string, type: ToastType = 'info', duration: number = 3000) => {
+  const showToastFn = (message: string, type: ToastType = 'info', duration: number = 3000) => {
     setToast({ visible: true, message, type, duration });
   };
 
@@ -157,8 +157,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToast((prev) => ({ ...prev, visible: false }));
   };
 
+  // Register global showToast function
+  useEffect(() => {
+    setGlobalShowToast(showToastFn);
+    return () => {
+      setGlobalShowToast(() => null);
+    };
+  }, []);
+
   return (
-    <ToastContext.Provider value={{ showToast, hideToast }}>
+    <ToastContext.Provider value={{ showToast: showToastFn, hideToast }}>
       {children}
       <Toast
         visible={toast.visible}
@@ -177,6 +185,21 @@ export function useToast() {
     throw new Error('useToast must be used within ToastProvider');
   }
   return context;
+}
+
+// Export standalone showToast for convenience (requires ToastProvider in tree)
+let globalShowToast: ((message: string, type?: ToastType, duration?: number) => void) | null = null;
+
+export function setGlobalShowToast(fn: (message: string, type?: ToastType, duration?: number) => void) {
+  globalShowToast = fn;
+}
+
+export function showToast(message: string, type: ToastType = 'info', duration: number = 3000) {
+  if (globalShowToast) {
+    globalShowToast(message, type, duration);
+  } else {
+    console.warn('[Toast] showToast called before ToastProvider mounted');
+  }
 }
 
 const styles = StyleSheet.create({

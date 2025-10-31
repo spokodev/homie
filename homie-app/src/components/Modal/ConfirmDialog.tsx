@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
-import { PrimaryButton, OutlineButton } from '../Button';
+import { PrimaryButton, OutlineButton, DangerButton } from '../Button';
 
 export interface ConfirmDialogProps {
   /** Dialog visibility */
@@ -83,13 +83,21 @@ export function ConfirmDialog({
               disabled={loading}
               style={styles.button}
             />
-            <PrimaryButton
-              title={confirmText}
-              onPress={handleConfirm}
-              loading={loading}
-              variant={confirmVariant}
-              style={styles.button}
-            />
+            {confirmVariant === 'danger' ? (
+              <DangerButton
+                title={confirmText}
+                onPress={handleConfirm}
+                loading={loading}
+                style={styles.button}
+              />
+            ) : (
+              <PrimaryButton
+                title={confirmText}
+                onPress={handleConfirm}
+                loading={loading}
+                style={styles.button}
+              />
+            )}
           </View>
         </Pressable>
       </Pressable>

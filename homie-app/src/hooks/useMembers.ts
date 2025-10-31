@@ -185,31 +185,25 @@ export function useAddPoints() {
       points: number;
       householdId: string;
     }) => {
-      // Get current points
-      const { data: member, error: fetchError } = await supabase
-        .from('members')
-        .select('points')
-        .eq('id', memberId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const newPoints = (member.points || 0) + points;
-      const newLevel = Math.floor(newPoints / 100) + 1;
-
-      // Update points and level
-      const { data, error } = await supabase
-        .from('members')
-        .update({
-          points: newPoints,
-          level: newLevel,
-        })
-        .eq('id', memberId)
-        .select()
-        .single();
+      // Use atomic RPC function to prevent race conditions
+      const { data, error } = await supabase.rpc('award_points_atomic', {
+        member_uuid: memberId,
+        points_to_add: points,
+      });
 
       if (error) throw error;
-      return data;
+
+      // Return the updated member data
+      if (data && data[0]) {
+        return {
+          id: memberId,
+          household_id: householdId,
+          points: data[0].new_points,
+          level: data[0].new_level,
+        };
+      }
+
+      throw new Error('Failed to update points');
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY, data.household_id] });

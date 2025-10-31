@@ -42,6 +42,20 @@ export default function AuthLayout() {
         }}
       />
       <Stack.Screen
+        name="reset-password"
+        options={{
+          title: 'Reset Password',
+          headerBackTitle: 'Back',
+        }}
+      />
+      <Stack.Screen
+        name="join-household"
+        options={{
+          title: 'Join Household',
+          headerBackTitle: 'Back',
+        }}
+      />
+      <Stack.Screen
         name="onboarding"
         options={{
           headerShown: false,

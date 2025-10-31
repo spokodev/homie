@@ -1,29 +1,57 @@
+// Legacy Colors export for backward compatibility
+// These flat color constants are used by older components that haven't been migrated to the new theme system
 export const Colors = {
-  primary: '#FF6B6B',     // Coral Red
-  secondary: '#4ECDC4',   // Teal
-  accent: '#FFD93D',      // Yellow
-  success: '#6BCB77',     // Green
-  error: '#EE5A6F',       // Error Red
-  warning: '#FFA502',     // Orange
+  // Brand colors
+  primary: '#FF5757',     // Coral Red (updated modern version)
+  secondary: '#319795',   // Teal
+  accent: '#F59E0B',      // Yellow
+  success: '#22C55E',     // Green
+  error: '#EF4444',       // Red
+  warning: '#F59E0B',     // Orange
 
-  gray900: '#2D3436',     // Dark Gray
-  gray700: '#636E72',     // Medium Gray
-  gray500: '#B2BEC3',     // Light Gray
-  gray400: '#CDD5D8',     // Lighter Gray
-  gray300: '#DFE6E9',     // Very Light Gray
-  gray200: '#EAF0F2',     // Extra Light Gray
-  gray100: '#F5F7FA',     // Almost White
+  // Gray scale
+  gray950: '#09090B',     // Darkest
+  gray900: '#18181B',     // Very Dark
+  gray800: '#27272A',     // Dark
+  gray700: '#3F3F46',     // Medium Dark
+  gray600: '#52525B',     // Medium
+  gray500: '#71717A',     // Medium Light
+  gray400: '#A1A1AA',     // Light Medium
+  gray300: '#D4D4D8',     // Light
+  gray200: '#E4E4E7',     // Very Light
+  gray100: '#F4F4F5',     // Extra Light
+  gray50: '#FAFAFA',      // Almost White
   white: '#FFFFFF',       // Pure White
+  black: '#000000',       // Pure Black
 
-  background: '#FFF8F0',  // Cream background
-  surface: '#FFFFFF',     // Card background
-  text: '#2D3436',        // Primary text
-  textSecondary: '#636E72', // Secondary text
+  // Background colors
+  background: '#FAFAF9',  // Primary background
+  backgroundSecondary: '#FAFAFA', // Secondary background
+  surface: '#FFFFFF',     // Card/surface background
+  card: '#FFFFFF',        // Card background (alias for surface)
+
+  // Text colors
+  text: '#18181B',        // Primary text (gray900)
+  textSecondary: '#52525B', // Secondary text (gray600)
+  textTertiary: '#71717A', // Tertiary text (gray500)
+  textDisabled: '#A1A1AA', // Disabled text (gray400)
+
+  // Border colors
+  border: '#E4E4E7',      // Default border (gray200)
+  borderHover: '#D4D4D8', // Hover border (gray300)
+  borderFocus: '#FF5757', // Focus border (primary)
 
   // Semantic colors
-  captain: '#FF6B6B',     // Captain badge
-  pet: '#8B6F47',        // Pet brown
-  streak: '#FFA502',     // Streak orange
+  captain: '#FF5757',     // Captain badge (primary)
+  pet: '#8B6F47',         // Pet brown
+  streak: '#F59E0B',      // Streak orange (accent)
+
+  // Additional semantic colors for legacy code
+  info: '#319795',        // Info color (secondary)
+  link: '#FF5757',        // Link color (primary)
+
+  // Transparent
+  transparent: 'transparent',
 } as const;
 
 export const Spacing = {
@@ -169,6 +197,9 @@ export const Animations = {
     stiffness: 150,
   },
 } as const;
+
+// Re-export color types from colors.ts for convenience
+export type { FlattenedColors } from './colors';
 
 export default {
   Colors,

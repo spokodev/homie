@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "expo-barcode-scanner": "^13.0.1",
+    "expo-image-manipulator": "^14.0.7",
+    "react-native-qrcode-svg": "^6.3.16"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.10",
+    "typescript": "~5.9.2"
+  }
+}

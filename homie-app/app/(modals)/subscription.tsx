@@ -12,7 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { APP_CONFIG } from '@/constants';
 import { usePremiumStore } from '@/stores/premium.store';
 import { trackEvent, trackPremiumEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
@@ -30,6 +31,7 @@ const FEATURES = [
 
 export default function SubscriptionScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
 
   const {
@@ -101,12 +103,14 @@ export default function SubscriptionScreen() {
   const yearlyPrice = yearlyPackage?.product.priceString || '$49.99';
   const yearlySavings = '$10';
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="close" size={28} color={Colors.text} />
+          <Ionicons name="close" size={28} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Upgrade to Premium</Text>
         <View style={{ width: 28 }} />
@@ -119,7 +123,7 @@ export default function SubscriptionScreen() {
         {/* Hero Section */}
         <Animated.View entering={FadeIn.duration(500)} style={styles.hero}>
           <View style={styles.crown}>
-            <MaterialCommunityIcons name="crown" size={48} color={Colors.accent} />
+            <MaterialCommunityIcons name="crown" size={48} color={colors.accent} />
           </View>
           <Text style={styles.heroTitle}>Unlock Full Potential</Text>
           <Text style={styles.heroSubtitle}>
@@ -195,7 +199,7 @@ export default function SubscriptionScreen() {
               <Text style={styles.featureTitle}>{feature.title}</Text>
               <View style={styles.featureComparison}>
                 <Text style={styles.featureFree}>{feature.free}</Text>
-                <Ionicons name="arrow-forward" size={16} color={Colors.gray500} />
+                <Ionicons name="arrow-forward" size={16} color={colors.gray500} />
                 <Text style={styles.featurePremium}>{feature.premium}</Text>
               </View>
             </Animated.View>
@@ -211,7 +215,7 @@ export default function SubscriptionScreen() {
           disabled={isPurchasing}
         >
           {isPurchasing ? (
-            <ActivityIndicator color={Colors.white} />
+            <ActivityIndicator color={colors.card} />
           ) : (
             <>
               <Text style={styles.purchaseButtonText}>
@@ -230,7 +234,7 @@ export default function SubscriptionScreen() {
           style={styles.restoreButton}
         >
           {isRestoring ? (
-            <ActivityIndicator color={Colors.primary} size="small" />
+            <ActivityIndicator color={colors.primary} size="small" />
           ) : (
             <Text style={styles.restoreText}>Restore Purchases</Text>
           )}
@@ -245,10 +249,10 @@ export default function SubscriptionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -262,7 +266,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   scrollContent: {
     paddingBottom: Spacing.xxl,
@@ -275,7 +279,7 @@ const styles = StyleSheet.create({
   crown: {
     width: 80,
     height: 80,
-    backgroundColor: Colors.accent + '20',
+    backgroundColor: colors.accent + '20',
     borderRadius: BorderRadius.full,
     justifyContent: 'center',
     alignItems: 'center',
@@ -283,13 +287,13 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     ...Typography.h2,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.sm,
     textAlign: 'center',
   },
   heroSubtitle: {
     ...Typography.bodyLarge,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   plansContainer: {
@@ -297,30 +301,30 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   planCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.large,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
     borderWidth: 2,
-    borderColor: Colors.gray300,
+    borderColor: colors.border,
     ...Shadows.small,
   },
   planCardSelected: {
-    borderColor: Colors.primary,
+    borderColor: colors.primary,
     ...Shadows.medium,
   },
   popularBadge: {
     position: 'absolute',
     top: -10,
     right: Spacing.md,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.small,
   },
   popularText: {
     ...Typography.labelSmall,
-    color: Colors.white,
+    color: colors.card,
     fontWeight: '700',
   },
   planHeader: {
@@ -332,7 +336,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: Colors.primary,
+    borderColor: colors.primary,
     marginRight: Spacing.md,
     justifyContent: 'center',
     alignItems: 'center',
@@ -341,21 +345,21 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
   },
   planTitle: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600',
   },
   planPrice: {
     ...Typography.h4,
-    color: Colors.primary,
+    color: colors.primary,
     marginTop: Spacing.xs,
   },
   savingsText: {
     ...Typography.labelMedium,
-    color: Colors.success,
+    color: colors.success,
     marginTop: Spacing.xs,
   },
   featuresContainer: {
@@ -363,7 +367,7 @@ const styles = StyleSheet.create({
   },
   featuresTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.md,
   },
   featureRow: {
@@ -371,7 +375,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray100,
+    borderBottomColor: colors.gray100,
   },
   featureIcon: {
     fontSize: 20,
@@ -379,7 +383,7 @@ const styles = StyleSheet.create({
   },
   featureTitle: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     flex: 1,
   },
   featureComparison: {
@@ -389,21 +393,21 @@ const styles = StyleSheet.create({
   },
   featureFree: {
     ...Typography.bodySmall,
-    color: Colors.gray500,
+    color: colors.gray500,
   },
   featurePremium: {
     ...Typography.bodySmall,
-    color: Colors.success,
+    color: colors.success,
     fontWeight: '600',
   },
   bottomContainer: {
     padding: Spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderTopColor: colors.border,
+    backgroundColor: colors.card,
   },
   purchaseButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: BorderRadius.full,
     paddingVertical: Spacing.md,
     alignItems: 'center',
@@ -415,11 +419,11 @@ const styles = StyleSheet.create({
   },
   purchaseButtonText: {
     ...Typography.button,
-    color: Colors.white,
+    color: colors.card,
   },
   purchaseButtonPrice: {
     ...Typography.bodySmall,
-    color: Colors.white,
+    color: colors.card,
     opacity: 0.9,
   },
   restoreButton: {
@@ -428,12 +432,12 @@ const styles = StyleSheet.create({
   },
   restoreText: {
     ...Typography.bodyMedium,
-    color: Colors.primary,
+    color: colors.primary,
     textDecorationLine: 'underline',
   },
   disclaimer: {
     ...Typography.bodySmall,
-    color: Colors.gray500,
+    color: colors.gray500,
     textAlign: 'center',
     marginTop: Spacing.sm,
   },

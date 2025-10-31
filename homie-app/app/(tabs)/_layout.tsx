@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing } from '@/theme';
+import { Colors, Spacing } from '@/theme';
 
 export default function TabLayout() {
   return (

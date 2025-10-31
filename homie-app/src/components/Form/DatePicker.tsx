@@ -164,6 +164,7 @@ export function DatePicker({
                     minimumDate={minimumDate}
                     maximumDate={maximumDate}
                     themeVariant="light"
+                    locale="en-US"
                   />
                 </View>
               </View>
@@ -176,6 +177,7 @@ export function DatePicker({
               onChange={handleChange}
               minimumDate={minimumDate}
               maximumDate={maximumDate}
+              locale="en-US"
             />
           )}
         </>

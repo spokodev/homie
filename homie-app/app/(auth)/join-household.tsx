@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -68,7 +68,7 @@ export default function JoinHouseholdScreen() {
     router.replace('/(auth)/onboarding');
   };
 
-  const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
+  const handleBarCodeScanned = ({ data }: { type: string; data: string }) => {
     setShowScanner(false);
 
     // Parse QR code data (format: homielife://join/CODE)

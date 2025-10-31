@@ -11,7 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import {
   useRecurringTasks,
   useToggleRecurringTask,
@@ -20,15 +21,17 @@ import {
 } from '@/hooks/useRecurringTasks';
 import { RecurringTask, getRecurrenceDescription } from '@/types/recurrence';
 import { TASK_CATEGORIES } from '@/constants';
-import { showToast } from '@/components/Toast';
+import { useToast } from '@/components/Toast';
 import { format } from 'date-fns';
 
 export default function RecurringTasksScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { data: recurringTasks = [], isLoading, refetch } = useRecurringTasks();
   const toggleTask = useToggleRecurringTask();
   const deleteTask = useDeleteRecurringTask();
   const generateInstances = useGenerateRecurringTaskInstances();
+  const { showToast } = useToast();
 
   const handleToggle = async (task: RecurringTask) => {
     try {
@@ -109,7 +112,7 @@ export default function RecurringTasksScreen() {
             <Ionicons
               name={item.is_active ? 'pause' : 'play'}
               size={20}
-              color={item.is_active ? Colors.warning : Colors.success}
+              color={item.is_active ? colors.warning : colors.success}
             />
           </TouchableOpacity>
         </View>
@@ -118,19 +121,19 @@ export default function RecurringTasksScreen() {
         <View style={styles.taskDetails}>
           {item.estimated_minutes && (
             <View style={styles.detailItem}>
-              <Ionicons name="time-outline" size={16} color={Colors.textSecondary} />
+              <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
               <Text style={styles.detailText}>{item.estimated_minutes} min</Text>
             </View>
           )}
           {item.points && (
             <View style={styles.detailItem}>
-              <Ionicons name="star-outline" size={16} color={Colors.accent} />
+              <Ionicons name="star-outline" size={16} color={colors.accent} />
               <Text style={styles.detailText}>{item.points} pts</Text>
             </View>
           )}
           {nextOccurrence && (
             <View style={styles.detailItem}>
-              <Ionicons name="calendar-outline" size={16} color={Colors.primary} />
+              <Ionicons name="calendar-outline" size={16} color={colors.primary} />
               <Text style={styles.detailText}>
                 Next: {format(nextOccurrence, 'MMM d, h:mm a')}
               </Text>
@@ -153,24 +156,26 @@ export default function RecurringTasksScreen() {
         {/* Actions */}
         <View style={styles.actions}>
           <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item)}>
-            <Ionicons name="trash-outline" size={18} color={Colors.error} />
-            <Text style={[styles.actionButtonText, { color: Colors.error }]}>Delete</Text>
+            <Ionicons name="trash-outline" size={18} color={colors.error} />
+            <Text style={[styles.actionButtonText, { color: colors.error }]}>Delete</Text>
           </TouchableOpacity>
         </View>
       </View>
     );
   };
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color={Colors.text} />
+          <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Recurring Tasks</Text>
         <TouchableOpacity onPress={() => router.push('/(modals)/create-recurring-task')}>
-          <Ionicons name="add" size={28} color={Colors.primary} />
+          <Ionicons name="add" size={28} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -182,7 +187,7 @@ export default function RecurringTasksScreen() {
             onPress={handleGenerateNow}
             disabled={generateInstances.isPending}
           >
-            <Ionicons name="refresh-outline" size={20} color={Colors.white} />
+            <Ionicons name="refresh-outline" size={20} color={colors.card} />
             <Text style={styles.generateButtonText}>
               {generateInstances.isPending ? 'Generating...' : 'Generate Due Tasks Now'}
             </Text>
@@ -196,11 +201,11 @@ export default function RecurringTasksScreen() {
       {/* List */}
       {isLoading ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : recurringTasks.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="repeat-outline" size={80} color={Colors.gray300} />
+          <Ionicons name="repeat-outline" size={80} color={colors.border} />
           <Text style={styles.emptyTitle}>No Recurring Tasks</Text>
           <Text style={styles.emptyText}>
             Create recurring tasks to automate repetitive chores
@@ -209,7 +214,7 @@ export default function RecurringTasksScreen() {
             style={styles.createButton}
             onPress={() => router.push('/(modals)/create-recurring-task')}
           >
-            <Ionicons name="add" size={20} color={Colors.white} />
+            <Ionicons name="add" size={20} color={colors.card} />
             <Text style={styles.createButtonText}>Create Recurring Task</Text>
           </TouchableOpacity>
         </View>
@@ -225,10 +230,10 @@ export default function RecurringTasksScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -237,36 +242,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   generateSection: {
     padding: Spacing.lg,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
+    borderBottomColor: colors.border,
   },
   generateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
     borderRadius: BorderRadius.medium,
   },
   generateButtonText: {
     ...Typography.button,
-    color: Colors.white,
+    color: colors.card,
   },
   generateHint: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: Spacing.sm,
   },
@@ -283,13 +288,13 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text,
     marginTop: Spacing.lg,
     marginBottom: Spacing.sm,
   },
   emptyText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: Spacing.xl,
@@ -298,20 +303,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.xl,
     borderRadius: BorderRadius.full,
   },
   createButtonText: {
     ...Typography.button,
-    color: Colors.white,
+    color: colors.card,
   },
   listContent: {
     padding: Spacing.md,
   },
   taskCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     marginBottom: Spacing.md,
@@ -350,7 +355,7 @@ const styles = StyleSheet.create({
   },
   taskTitle: {
     ...Typography.labelLarge,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: 2,
   },
   taskTitleInactive: {
@@ -358,7 +363,7 @@ const styles = StyleSheet.create({
   },
   recurrenceText: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   toggleButton: {
     padding: Spacing.xs,
@@ -376,19 +381,19 @@ const styles = StyleSheet.create({
   },
   detailText: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingTop: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray300,
+    borderTopColor: colors.border,
     marginBottom: Spacing.sm,
   },
   statsText: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   actions: {
     flexDirection: 'row',

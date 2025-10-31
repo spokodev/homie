@@ -1,0 +1,57 @@
+=== households ===
+[{"policy_name":"Users can update their households if admin","policy_command":"UPDATE","policy_qual":"(id IN ( SELECT members.household_id\n   FROM members\n  WHERE ((members.user_id = uid()) AND ((members.role)::text = 'admin'::text))))","policy_with_check":null}, 
+ {"policy_name":"Users can view their households","policy_command":"SELECT","policy_qual":"(id IN ( SELECT members.household_id\n   FROM members\n  WHERE (members.user_id = uid())))","policy_with_check":null}, 
+ {"policy_name":"enable_delete_for_admins_households","policy_command":"DELETE","policy_qual":"(id IN ( SELECT m.household_id\n   FROM members m\n  WHERE ((m.user_id = uid()) AND ((m.role)::text = 'admin'::text))))","policy_with_check":null}, 
+ {"policy_name":"enable_insert_for_authenticated_users","policy_command":"INSERT","policy_qual":null,"policy_with_check":"true"}]
+
+=== members ===
+[{"policy_name":"enable_delete_for_admins","policy_command":"DELETE","policy_qual":"((household_id IN ( SELECT m.household_id\n   FROM members m\n  WHERE ((m.user_id = uid()) AND ((m.role)::text = 'admin'::text)))) AND (user_id <> uid()))","policy_with_check":null}, 
+ {"policy_name":"enable_insert_for_authenticated_users","policy_command":"INSERT","policy_qual":null,"policy_with_check":"(user_id = uid())"}, 
+ {"policy_name":"enable_select_for_household_members","policy_command":"SELECT","policy_qual":"((household_id = get_user_household_id()) OR (user_id = uid()))","policy_with_check":null}, 
+ {"policy_name":"enable_update_for_own_profile","policy_command":"UPDATE","policy_qual":"(user_id = uid())","policy_with_check":"(user_id = uid())"}]
+
+=== tasks ===
+[{"policy_name":"Users can create tasks in their household","policy_command":"INSERT","policy_qual":null,"policy_with_check":"(household_id IN ( SELECT members.household_id\n   FROM members\n  WHERE (members.user_id = uid())))"}, 
+ {"policy_name":"Users can view tasks in their household","policy_command":"SELECT","policy_qual":"(household_id IN ( SELECT members.household_id\n   FROM members\n  WHERE (members.user_id = uid())))","policy_with_check":null}, 
+ {"policy_name":"enable_delete_for_household_tasks","policy_command":"DELETE","policy_qual":"(household_id = get_user_household_id())","policy_with_check":null}, 
+ {"policy_name":"enable_update_for_household_tasks","policy_command":"UPDATE","policy_qual":"(household_id = get_user_household_id())","policy_with_check":"(household_id = get_user_household_id())"}]
+
+=== rooms ===
+[{"policy_name":"enable_delete_for_admins_rooms","policy_command":"DELETE","policy_qual":"(household_id IN ( SELECT m.household_id\n   FROM members m\n  WHERE ((m.user_id = uid()) AND ((m.role)::text = 'admin'::text))))","policy_with_check":null}, 
+ {"policy_name":"enable_insert_for_household_rooms","policy_command":"INSERT","policy_qual":null,"policy_with_check":"(household_id = get_user_household_id())"}, 
+ {"policy_name":"enable_select_for_household_rooms","policy_command":"SELECT","policy_qual":"(household_id = get_user_household_id())","policy_with_check":null}, 
+ {"policy_name":"enable_update_for_household_rooms","policy_command":"UPDATE","policy_qual":"(household_id = get_user_household_id())","policy_with_check":"(household_id = get_user_household_id())"}]
+
+=== room_notes ===
+[{"policy_name":"enable_delete_for_own_room_notes","policy_command":"DELETE","policy_qual":"(member_id = ( SELECT members.id\n   FROM members\n  WHERE (members.user_id = uid())\n LIMIT 1))","policy_with_check":null}, 
+ {"policy_name":"enable_insert_for_room_notes","policy_command":"INSERT","policy_qual":null,"policy_with_check":"(member_id = ( SELECT members.id\n   FROM members\n  WHERE (members.user_id = uid())\n LIMIT 1))"}, 
+ {"policy_name":"enable_select_for_household_room_notes","policy_command":"SELECT","policy_qual":"(room_id IN ( SELECT rooms.id\n   FROM rooms\n  WHERE (rooms.household_id = get_user_household_id())))","policy_with_check":null}, 
+ {"policy_name":"enable_update_for_own_room_notes","policy_command":"UPDATE","policy_qual":"(member_id = ( SELECT members.id\n   FROM members\n  WHERE (members.user_id = uid())\n LIMIT 1))","policy_with_check":"(member_id = ( SELECT members.id\n   FROM members\n  WHERE (members.user_id = uid())\n LIMIT 1))"}]
+
+=== cleaning_captains ===
+[{"policy_name":"enable_delete_for_admins_captains","policy_command":"DELETE","policy_qual":"(household_id IN ( SELECT m.household_id\n   FROM members m\n  WHERE ((m.user_id = uid()) AND ((m.role)::text = 'admin'::text))))","policy_with_check":null}, 
+ {"policy_name":"enable_insert_for_captains","policy_command":"INSERT","policy_qual":null,"policy_with_check":"(household_id = get_user_household_id())"}, 
+ {"policy_name":"enable_select_for_household_captains","policy_command":"SELECT","policy_qual":"(household_id = get_user_household_id())","policy_with_check":null}, 
+ {"policy_name":"enable_update_for_captains","policy_command":"UPDATE","policy_qual":"(household_id = get_user_household_id())","policy_with_check":"(household_id = get_user_household_id())"}]
+
+=== captain_ratings ===
+[{"policy_name":"enable_delete_for_own_ratings","policy_command":"DELETE","policy_qual":"(rated_by = ( SELECT members.id\n   FROM members\n  WHERE (members.user_id = uid())\n LIMIT 1))","policy_with_check":null}, 
+ {"policy_name":"enable_insert_for_captain_ratings","policy_command":"INSERT","policy_qual":null,"policy_with_check":"(rated_by = ( SELECT members.id\n   FROM members\n  WHERE (members.user_id = uid())\n LIMIT 1))"}, 
+ {"policy_name":"enable_select_for_household_captain_ratings","policy_command":"SELECT","policy_qual":"(captain_week_id IN ( SELECT cleaning_captains.id\n   FROM cleaning_captains\n  WHERE (cleaning_captains.household_id = get_user_household_id())))","policy_with_check":null}, 
+ {"policy_name":"enable_update_for_own_ratings","policy_command":"UPDATE","policy_qual":"(rated_by = ( SELECT members.id\n   FROM members\n  WHERE (members.user_id = uid())\n LIMIT 1))","policy_with_check":"(rated_by = ( SELECT members.id\n   FROM members\n  WHERE (members.user_id = uid())\n LIMIT 1))"}]
+
+=== messages ===
+[{"policy_name":"Users can send messages in their household","policy_command":"INSERT","policy_qual":null,"policy_with_check":"(household_id IN ( SELECT members.household_id\n   FROM members\n  WHERE (members.user_id = uid())))"}, 
+ {"policy_name":"Users can view messages in their household","policy_command":"SELECT","policy_qual":"(household_id IN ( SELECT members.household_id\n   FROM members\n  WHERE (members.user_id = uid())))","policy_with_check":null}, 
+ {"policy_name":"enable_delete_for_own_messages","policy_command":"DELETE","policy_qual":"(member_id = ( SELECT members.id\n   FROM members\n  WHERE (members.user_id = uid())\n LIMIT 1))","policy_with_check":null}, 
+ {"policy_name":"enable_update_for_own_messages","policy_command":"UPDATE","policy_qual":"(member_id = ( SELECT members.id\n   FROM members\n  WHERE (members.user_id = uid())\n LIMIT 1))","policy_with_check":"(member_id = ( SELECT members.id\n   FROM members\n  WHERE (members.user_id = uid())\n LIMIT 1))"}]
+
+=== badges ===
+[{"policy_name":"enable_select_for_all_badges","policy_command":"SELECT","policy_qual":"true","policy_with_check":null}]
+
+=== member_badges ===
+[{"policy_name":"enable_delete_for_admins_member_badges","policy_command":"DELETE","policy_qual":"(member_id IN ( SELECT m.id\n   FROM members m\n  WHERE (m.household_id IN ( SELECT m2.household_id\n           FROM members m2\n          WHERE ((m2.user_id = uid()) AND ((m2.role)::text = 'admin'::text))))))","policy_with_check":null}, 
+ {"policy_name":"enable_insert_for_member_badges","policy_command":"INSERT","policy_qual":null,"policy_with_check":"(member_id IN ( SELECT members.id\n   FROM members\n  WHERE (members.household_id = get_user_household_id())))"}, 
+ {"policy_name":"enable_select_for_household_member_badges","policy_command":"SELECT","policy_qual":"(member_id IN ( SELECT members.id\n   FROM members\n  WHERE (members.household_id = get_user_household_id())))","policy_with_check":null}, 
+ {"policy_name":"enable_update_for_member_badges","policy_command":"UPDATE","policy_qual":"(member_id IN ( SELECT members.id\n   FROM members\n  WHERE (members.household_id = get_user_household_id())))","policy_with_check":"(member_id IN ( SELECT members.id\n   FROM members\n  WHERE (members.household_id = get_user_household_id())))"}]
+

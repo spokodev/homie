@@ -31,6 +31,8 @@ export interface ButtonProps extends Omit<TouchableOpacityProps, 'style'> {
   fullWidth?: boolean;
   /** Custom button styles */
   style?: TouchableOpacityProps['style'];
+  /** Left icon element (alternative to icon prop) */
+  leftIcon?: React.ReactElement;
 }
 
 export function Button({
@@ -42,6 +44,7 @@ export function Button({
   icon,
   iconPosition = 'left',
   fullWidth = false,
+  leftIcon,
   style,
   onPress,
   ...rest
@@ -125,7 +128,8 @@ export function Button({
         />
       ) : (
         <View style={styles.contentContainer}>
-          {icon && iconPosition === 'left' && (
+          {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
+          {icon && iconPosition === 'left' && !leftIcon && (
             <Ionicons
               name={icon}
               size={iconSize}

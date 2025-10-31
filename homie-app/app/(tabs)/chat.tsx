@@ -9,24 +9,40 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Pressable,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
-import { useMessages, useSendMessage, Message } from '@/hooks/useMessages';
+import { useMessages, useSendMessage, useDeleteMessage, useEditMessage, Message } from '@/hooks/useMessages';
+import { useToggleReaction, COMMON_REACTIONS } from '@/hooks/useMessageReactions';
+import { MessageReactions } from '@/components/Chat/MessageReactions';
 import { useToast } from '@/components/Toast';
 import { logError } from '@/utils/errorHandling';
 
 export default function ChatScreen() {
+  const colors = useThemeColors();
   const { household, member } = useHousehold();
   const { data: messages = [], isLoading, error } = useMessages(household?.id);
   const sendMessage = useSendMessage();
+  const deleteMessage = useDeleteMessage();
+  const editMessage = useEditMessage();
+  const toggleReaction = useToggleReaction();
   const { showToast } = useToast();
+
 
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [showReactionsFor, setShowReactionsFor] = useState<string | null>(null);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const flatListRef = useRef<FlatList>(null);
+
+  const styles = createStyles(colors);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -43,18 +59,125 @@ export default function ChatScreen() {
 
     setIsSending(true);
     try {
-      await sendMessage.mutateAsync({
-        household_id: household.id,
-        member_id: member.id,
-        content: trimmedText,
-        type: 'text',
-      });
+      // If editing, update the message
+      if (editingMessage) {
+        await editMessage.mutateAsync({
+          messageId: editingMessage.id,
+          content: trimmedText,
+          householdId: household.id,
+        });
+        setEditingMessage(null);
+        showToast('Message updated', 'success');
+      } else {
+        // Otherwise send new message
+        await sendMessage.mutateAsync({
+          household_id: household.id,
+          member_id: member.id,
+          member_name: member.name,
+          member_avatar: member.avatar,
+          content: trimmedText,
+          type: 'text',
+          reply_to_id: replyingTo?.id,
+        } as any);
+        setReplyingTo(null);
+      }
       setInputText('');
     } catch (err: any) {
-      logError(err, 'Send Message');
-      showToast('Failed to send message. Please try again.', 'error');
+      logError(err, editingMessage ? 'Edit Message' : 'Send Message');
+      showToast(`Failed to ${editingMessage ? 'edit' : 'send'} message. Please try again.`, 'error');
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleDeleteMessage = (message: Message) => {
+    Alert.alert(
+      'Delete Message',
+      'Are you sure you want to delete this message?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteMessage.mutateAsync({
+                messageId: message.id,
+                householdId: message.household_id,
+              });
+              showToast('Message deleted', 'success');
+            } catch (err: any) {
+              logError(err, 'Delete Message');
+              showToast('Failed to delete message', 'error');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleReaction = async (messageId: string, emoji: string) => {
+    if (!household?.id) return;
+
+    try {
+      await toggleReaction.mutateAsync({
+        messageId,
+        emoji,
+        householdId: household.id,
+      });
+      setShowReactionsFor(null);
+    } catch (error: any) {
+      logError(error, 'Toggle Reaction');
+      showToast('Failed to add reaction', 'error');
+    }
+  };
+
+  const handleMessageLongPress = (message: Message) => {
+    const isOwnMessage = message.member_id === member?.id;
+    const isAdmin = member?.role === 'admin';
+
+    const options = [];
+
+    // Add reaction option
+    options.push({
+      text: '👍 Add Reaction',
+      onPress: () => setShowReactionsFor(message.id),
+    });
+
+    // Reply option (for all messages)
+    options.push({
+      text: 'Reply',
+      onPress: () => {
+        setReplyingTo(message);
+        setInputText('');
+      },
+    });
+
+    // Edit option (only for own messages)
+    if (isOwnMessage && message.type === 'text') {
+      options.push({
+        text: 'Edit',
+        onPress: () => {
+          setEditingMessage(message);
+          setInputText(message.content);
+          setReplyingTo(null);
+        },
+      });
+    }
+
+    // Only allow deleting own messages or if admin
+    if (isOwnMessage || isAdmin) {
+      options.push({
+        text: 'Delete',
+        style: 'destructive' as const,
+        onPress: () => handleDeleteMessage(message),
+      });
+    }
+
+    options.push({ text: 'Cancel', style: 'cancel' as const });
+
+    if (options.length > 1) {
+      Alert.alert('Message Options', undefined, options);
     }
   };
 
@@ -82,43 +205,68 @@ export default function ChatScreen() {
             <Text style={styles.avatar}>{item.member_avatar || '😊'}</Text>
           </View>
         )}
-        <View
-          style={[
-            styles.messageBubble,
-            isOwnMessage ? styles.ownMessageBubble : styles.otherMessageBubble,
-          ]}
-        >
-          {!isOwnMessage && (
-            <Text style={styles.senderName}>{item.member_name || 'Unknown'}</Text>
-          )}
-          <Text
+        <View style={{ maxWidth: '75%' }}>
+          <Pressable
+            onLongPress={() => handleMessageLongPress(item)}
             style={[
-              styles.messageText,
-              isOwnMessage ? styles.ownMessageText : styles.otherMessageText,
+              styles.messageBubble,
+              isOwnMessage ? styles.ownMessageBubble : styles.otherMessageBubble,
             ]}
           >
-            {item.content}
-          </Text>
-          <Text
-            style={[
-              styles.timestamp,
-              isOwnMessage ? styles.ownTimestamp : styles.otherTimestamp,
-            ]}
-          >
-            {formatTimestamp(item.created_at)}
-          </Text>
+            <Text style={[
+              styles.senderName,
+              isOwnMessage && styles.ownSenderName
+            ]}>
+              {item.member_name || 'Unknown'}
+            </Text>
+            <Text
+              style={[
+                styles.messageText,
+                isOwnMessage ? styles.ownMessageText : styles.otherMessageText,
+              ]}
+            >
+              {item.content}
+            </Text>
+            <Text
+              style={[
+                styles.timestamp,
+                isOwnMessage ? styles.ownTimestamp : styles.otherTimestamp,
+              ]}
+            >
+              {formatTimestamp(item.created_at)}
+            </Text>
+          </Pressable>
+
+          <MessageReactions
+            messageId={item.id}
+            onReact={(emoji) => handleReaction(item.id, emoji)}
+            showPicker={showReactionsFor === item.id}
+            currentMemberId={member?.id}
+          />
         </View>
+        {isOwnMessage && (
+          <View style={styles.avatarContainer}>
+            <Text style={styles.avatar}>{item.member_avatar || '😊'}</Text>
+          </View>
+        )}
       </View>
     );
   };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Ionicons name="chatbubbles-outline" size={64} color={Colors.gray500} />
+      <Ionicons name="chatbubbles-outline" size={64} color={colors.text.tertiary} />
       <Text style={styles.emptyStateTitle}>No messages yet</Text>
       <Text style={styles.emptyStateText}>
         Start a conversation with your household!
       </Text>
+      <TouchableOpacity
+        style={styles.createChannelButton}
+        onPress={() => router.push('/(modals)/channels')}
+      >
+        <Ionicons name="add-circle" size={20} color={colors.primary.default} />
+        <Text style={styles.createChannelButtonText}>Create Group or Direct Message</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -126,7 +274,7 @@ export default function ChatScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={48} color={Colors.error} />
+          <Ionicons name="alert-circle-outline" size={48} color={colors.error.default} />
           <Text style={styles.errorText}>Failed to load messages</Text>
           <Text style={styles.errorHint}>Please check your connection and try again</Text>
         </View>
@@ -135,22 +283,51 @@ export default function ChatScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoid}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Family Chat</Text>
-          <Text style={styles.subtitle}>{household?.name || 'Loading...'}</Text>
-        </View>
+    <>
+      <Stack.Screen
+        options={{
+          title: 'Family Chat',
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() => {
+                console.log('Opening channels modal');
+                router.push('/(modals)/channels');
+              }}
+              style={{
+                marginRight: 8,
+                backgroundColor: colors.primary.default,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 20,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              <Ionicons name="add" size={18} color="#FFFFFF" />
+              <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
+                New
+              </Text>
+            </TouchableOpacity>
+          ),
+        }}
+      />
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoid}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>General Chat</Text>
+            <Text style={styles.subtitle}>{household?.name || 'Loading...'}</Text>
+          </View>
 
         {/* Messages List */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={Colors.primary} />
+            <ActivityIndicator size="large" color={colors.primary.default} />
             <Text style={styles.loadingText}>Loading messages...</Text>
           </View>
         ) : (
@@ -172,16 +349,42 @@ export default function ChatScreen() {
 
         {/* Input */}
         <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Type a message..."
-            placeholderTextColor={Colors.gray500}
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            maxLength={500}
-            editable={!isSending}
-          />
+          {/* Edit/Reply indicator */}
+          {(editingMessage || replyingTo) && (
+            <View style={styles.inputModeIndicator}>
+              <View style={styles.inputModeContent}>
+                <Ionicons
+                  name={editingMessage ? 'pencil' : 'return-down-forward'}
+                  size={16}
+                  color={colors.primary.default}
+                />
+                <Text style={styles.inputModeText}>
+                  {editingMessage ? 'Editing message' : `Replying to ${replyingTo?.member_name}`}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  setEditingMessage(null);
+                  setReplyingTo(null);
+                  setInputText('');
+                }}
+              >
+                <Ionicons name="close" size={20} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="Type a message..."
+              placeholderTextColor={colors.text.tertiary}
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              maxLength={500}
+              editable={!isSending}
+            />
           <TouchableOpacity
             style={[
               styles.sendButton,
@@ -191,14 +394,16 @@ export default function ChatScreen() {
             disabled={!inputText.trim() || isSending}
           >
             {isSending ? (
-              <ActivityIndicator size="small" color={Colors.white} />
+              <ActivityIndicator size="small" color={colors.text.inverse} />
             ) : (
-              <Ionicons name="send" size={20} color={Colors.white} />
+              <Ionicons name="send" size={20} color={colors.text.inverse} />
             )}
           </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </>
   );
 }
 
@@ -218,27 +423,27 @@ function formatTimestamp(timestamp: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background.primary,
   },
   keyboardAvoid: {
     flex: 1,
   },
   header: {
     padding: Spacing.lg,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.surface.primary,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
+    borderBottomColor: colors.border.default,
   },
   title: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text.primary,
   },
   subtitle: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     marginTop: 2,
   },
   loadingContainer: {
@@ -248,7 +453,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     marginTop: Spacing.md,
   },
   errorContainer: {
@@ -259,12 +464,12 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...Typography.h4,
-    color: Colors.error,
+    color: colors.error.default,
     marginTop: Spacing.md,
   },
   errorHint: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     marginTop: Spacing.xs,
     textAlign: 'center',
   },
@@ -280,14 +485,29 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text.primary,
     marginTop: Spacing.md,
   },
   emptyStateText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     marginTop: Spacing.xs,
     textAlign: 'center',
+  },
+  createChannelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    backgroundColor: colors.primary.default + '15',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.large,
+    marginTop: Spacing.lg,
+  },
+  createChannelButtonText: {
+    ...Typography.bodyMedium,
+    color: colors.primary.default,
+    fontWeight: '600',
   },
   messageContainer: {
     flexDirection: 'row',
@@ -304,7 +524,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.gray300,
+    backgroundColor: colors.border.default,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.xs,
@@ -313,16 +533,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   messageBubble: {
-    maxWidth: '75%',
     padding: Spacing.md,
     borderRadius: BorderRadius.large,
   },
   ownMessageBubble: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary.default,
     borderBottomRightRadius: 4,
   },
   otherMessageBubble: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.surface.primary,
     borderBottomLeftRadius: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -332,19 +551,23 @@ const styles = StyleSheet.create({
   },
   senderName: {
     ...Typography.labelSmall,
-    color: Colors.primary,
+    color: colors.primary.default,
     marginBottom: 2,
     fontWeight: '600',
+  },
+  ownSenderName: {
+    color: colors.text.inverse,
+    opacity: 0.9,
   },
   messageText: {
     ...Typography.bodyMedium,
     lineHeight: 20,
   },
   ownMessageText: {
-    color: Colors.white,
+    color: colors.text.inverse,
   },
   otherMessageText: {
-    color: Colors.text,
+    color: colors.text.primary,
   },
   timestamp: {
     ...Typography.bodySmall,
@@ -352,11 +575,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   ownTimestamp: {
-    color: Colors.white,
+    color: colors.text.inverse,
     opacity: 0.8,
   },
   otherTimestamp: {
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   systemMessageContainer: {
     alignItems: 'center',
@@ -364,25 +587,47 @@ const styles = StyleSheet.create({
   },
   systemMessageText: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
-    backgroundColor: Colors.gray300,
+    color: colors.text.secondary,
+    backgroundColor: colors.border.default,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
   },
   inputContainer: {
-    flexDirection: 'row',
-    padding: Spacing.md,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.surface.primary,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray300,
+    borderTopColor: colors.border.default,
+    padding: Spacing.md,
+  },
+  inputModeIndicator: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    backgroundColor: colors.primary.default + '15',
+    borderRadius: BorderRadius.medium,
+    marginBottom: Spacing.sm,
+  },
+  inputModeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  inputModeText: {
+    ...Typography.bodySmall,
+    color: colors.primary.default,
+    fontWeight: '600',
+  },
+  inputRow: {
+    flexDirection: 'row',
     alignItems: 'flex-end',
   },
   input: {
     flex: 1,
     ...Typography.bodyMedium,
-    color: Colors.text,
-    backgroundColor: Colors.gray100,
+    color: colors.text.primary,
+    backgroundColor: colors.surface.secondary,
     borderRadius: BorderRadius.large,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
@@ -394,12 +639,12 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary.default,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: Colors.gray500,
+    backgroundColor: colors.text.tertiary,
     opacity: 0.5,
   },
 });

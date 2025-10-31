@@ -13,13 +13,15 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { ERRORS } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignupScreen() {
   const router = useRouter();
   const { signUp } = useAuth();
+  const colors = useThemeColors();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,6 +33,8 @@ export default function SignupScreen() {
     password?: string;
     confirmPassword?: string;
   }>({});
+
+  const styles = createStyles(colors);
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
@@ -86,7 +90,22 @@ export default function SignupScreen() {
       }
 
       // Successfully signed up and logged in
-      router.replace('/(auth)/onboarding');
+      // Show option to join existing household or create new one
+      Alert.alert(
+        'Welcome to HomieLife! 🎉',
+        'Would you like to join an existing household or create a new one?',
+        [
+          {
+            text: 'Join Existing',
+            onPress: () => router.replace('/(auth)/join-household'),
+          },
+          {
+            text: 'Create New',
+            onPress: () => router.replace('/(auth)/onboarding'),
+          },
+        ],
+        { cancelable: false }
+      );
     } catch (error: any) {
       Alert.alert('Error', error?.message || 'Failed to create account. Please try again.');
     } finally {
@@ -120,7 +139,7 @@ export default function SignupScreen() {
                 <TextInput
                   style={[styles.input, errors.name ? styles.inputError : undefined]}
                   placeholder="Your name"
-                  placeholderTextColor={Colors.gray500}
+                  placeholderTextColor={colors.text.tertiary}
                   value={name}
                   onChangeText={(text) => {
                     setName(text);
@@ -140,7 +159,7 @@ export default function SignupScreen() {
                 <TextInput
                   style={[styles.input, errors.email ? styles.inputError : undefined]}
                   placeholder="your@email.com"
-                  placeholderTextColor={Colors.gray500}
+                  placeholderTextColor={colors.text.tertiary}
                   value={email}
                   onChangeText={(text) => {
                     setEmail(text);
@@ -162,7 +181,7 @@ export default function SignupScreen() {
                 <TextInput
                   style={[styles.input, errors.password ? styles.inputError : undefined]}
                   placeholder="Min 8 characters"
-                  placeholderTextColor={Colors.gray500}
+                  placeholderTextColor={colors.text.tertiary}
                   value={password}
                   onChangeText={(text) => {
                     setPassword(text);
@@ -183,7 +202,7 @@ export default function SignupScreen() {
                 <TextInput
                   style={[styles.input, errors.confirmPassword ? styles.inputError : undefined]}
                   placeholder="Re-enter password"
-                  placeholderTextColor={Colors.gray500}
+                  placeholderTextColor={colors.text.tertiary}
                   value={confirmPassword}
                   onChangeText={(text) => {
                     setConfirmPassword(text);
@@ -200,6 +219,22 @@ export default function SignupScreen() {
                 )}
               </View>
 
+              {/* Invitation Code Option */}
+              <View style={styles.inviteOption}>
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>Have an invitation code?</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+                <TouchableOpacity
+                  style={styles.inviteButton}
+                  onPress={() => router.push('/(auth)/join-household')}
+                  disabled={loading}
+                >
+                  <Text style={styles.inviteButtonText}>Enter Code</Text>
+                </TouchableOpacity>
+              </View>
+
               {/* Sign Up Button */}
               <TouchableOpacity
                 style={[styles.signupButton, loading && styles.buttonDisabled]}
@@ -207,7 +242,7 @@ export default function SignupScreen() {
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator color={Colors.white} />
+                  <ActivityIndicator color={colors.text.inverse} />
                 ) : (
                   <Text style={styles.signupButtonText}>Create Account</Text>
                 )}
@@ -231,10 +266,10 @@ export default function SignupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background.primary,
   },
   keyboardView: {
     flex: 1,
@@ -253,12 +288,12 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h2,
-    color: Colors.text,
+    color: colors.text.primary,
     marginBottom: Spacing.sm,
   },
   subtitle: {
     ...Typography.bodyLarge,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   form: {
     marginBottom: Spacing.xl,
@@ -268,30 +303,30 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.labelLarge,
-    color: Colors.text,
+    color: colors.text.primary,
     marginBottom: Spacing.sm,
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.gray300,
+    borderColor: colors.border.default,
     borderRadius: BorderRadius.medium,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     fontSize: 16,
     fontFamily: 'Inter-Regular',
-    color: Colors.text,
-    backgroundColor: Colors.white,
+    color: colors.text.primary,
+    backgroundColor: colors.surface.primary,
   },
   inputError: {
-    borderColor: Colors.error,
+    borderColor: colors.error.default,
   },
   errorText: {
     ...Typography.bodySmall,
-    color: Colors.error,
+    color: colors.error.default,
     marginTop: Spacing.xs,
   },
   signupButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary.default,
     borderRadius: BorderRadius.full,
     paddingVertical: Spacing.md,
     alignItems: 'center',
@@ -302,7 +337,7 @@ const styles = StyleSheet.create({
   },
   signupButtonText: {
     ...Typography.button,
-    color: Colors.white,
+    color: colors.text.inverse,
   },
   signInContainer: {
     flexDirection: 'row',
@@ -311,11 +346,42 @@ const styles = StyleSheet.create({
   },
   signInText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   signInLink: {
     ...Typography.bodyMedium,
-    color: Colors.primary,
+    color: colors.primary.default,
+    fontWeight: '600',
+  },
+  inviteOption: {
+    marginVertical: Spacing.md,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border.default,
+  },
+  dividerText: {
+    ...Typography.bodySmall,
+    color: colors.text.secondary,
+    paddingHorizontal: Spacing.sm,
+  },
+  inviteButton: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.medium,
+    borderWidth: 1,
+    borderColor: colors.primary.default,
+    alignItems: 'center',
+  },
+  inviteButtonText: {
+    ...Typography.bodyMedium,
+    color: colors.primary.default,
     fontWeight: '600',
   },
 });

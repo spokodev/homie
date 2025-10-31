@@ -11,12 +11,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useNotificationHistory } from '@/hooks/useNotifications';
 import { format } from 'date-fns';
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { notifications, loading, dismissNotification, dismissAll, refresh } =
     useNotificationHistory();
   const [refreshing, setRefreshing] = React.useState(false);
@@ -47,17 +49,17 @@ export default function NotificationsScreen() {
   const getNotificationColor = (type: string) => {
     switch (type) {
       case 'task_assigned':
-        return Colors.primary;
+        return colors.primary;
       case 'task_completed':
-        return Colors.success;
+        return colors.success;
       case 'message':
-        return Colors.secondary;
+        return colors.secondary;
       case 'captain_rotation':
         return '#F59E0B';
       case 'rating_request':
         return '#8B5CF6';
       default:
-        return Colors.gray500;
+        return colors.gray500;
     }
   };
 
@@ -86,18 +88,20 @@ export default function NotificationsScreen() {
           onPress={() => dismissNotification(item.request.identifier)}
           style={styles.dismissButton}
         >
-          <Ionicons name="close" size={20} color={Colors.textSecondary} />
+          <Ionicons name="close" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
     );
   };
+
+  const styles = createStyles(colors);
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color={Colors.text} />
+          <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         {notifications.length > 0 && (
@@ -111,11 +115,11 @@ export default function NotificationsScreen() {
       {/* Notification List */}
       {loading && notifications.length === 0 ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : notifications.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="notifications-off-outline" size={80} color={Colors.gray300} />
+          <Ionicons name="notifications-off-outline" size={80} color={colors.border} />
           <Text style={styles.emptyTitle}>No Notifications</Text>
           <Text style={styles.emptyText}>
             You're all caught up! Notifications will appear here when you receive them.
@@ -136,10 +140,10 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -148,16 +152,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   clearButton: {
     ...Typography.button,
-    color: Colors.error,
+    color: colors.error,
   },
   centerContainer: {
     flex: 1,
@@ -172,13 +176,13 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text,
     marginTop: Spacing.lg,
     marginBottom: Spacing.sm,
   },
   emptyText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -187,7 +191,7 @@ const styles = StyleSheet.create({
   },
   notificationCard: {
     flexDirection: 'row',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     marginBottom: Spacing.md,
@@ -210,17 +214,17 @@ const styles = StyleSheet.create({
   },
   notificationTitle: {
     ...Typography.labelLarge,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: 4,
   },
   notificationBody: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginBottom: Spacing.xs,
   },
   notificationTime: {
     ...Typography.bodySmall,
-    color: Colors.gray500,
+    color: colors.gray500,
   },
   dismissButton: {
     padding: Spacing.xs,

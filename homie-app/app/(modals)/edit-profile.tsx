@@ -12,7 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useUpdateMember } from '@/hooks/useMembers';
 import { COMMON_AVATARS } from '@/constants';
@@ -20,6 +21,7 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 export default function EditProfileScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { member } = useHousehold();
   const updateMember = useUpdateMember();
 
@@ -78,17 +80,19 @@ export default function EditProfileScreen() {
     }
   };
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color={Colors.text} />
+          <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>
         <TouchableOpacity onPress={handleSave} disabled={saving}>
           {saving ? (
-            <ActivityIndicator size="small" color={Colors.primary} />
+            <ActivityIndicator size="small" color={colors.primary} />
           ) : (
             <Text style={styles.saveButton}>Save</Text>
           )}
@@ -112,7 +116,7 @@ export default function EditProfileScreen() {
             value={name}
             onChangeText={setName}
             placeholder="Enter your name"
-            placeholderTextColor={Colors.gray400}
+            placeholderTextColor={colors.gray400}
             maxLength={50}
             autoCapitalize="words"
             autoCorrect={false}
@@ -140,7 +144,7 @@ export default function EditProfileScreen() {
                 <Text style={styles.avatarOptionText}>{avatar}</Text>
                 {selectedAvatar === avatar && (
                   <View style={styles.selectedBadge}>
-                    <Ionicons name="checkmark" size={16} color={Colors.white} />
+                    <Ionicons name="checkmark" size={16} color={colors.card} />
                   </View>
                 )}
               </TouchableOpacity>
@@ -150,7 +154,7 @@ export default function EditProfileScreen() {
 
         {/* Info Note */}
         <View style={styles.infoCard}>
-          <Ionicons name="information-circle" size={20} color={Colors.primary} />
+          <Ionicons name="information-circle" size={20} color={colors.primary} />
           <Text style={styles.infoText}>
             Your member type (human/pet) cannot be changed after account creation.
           </Text>
@@ -160,10 +164,10 @@ export default function EditProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -172,16 +176,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray200,
-    backgroundColor: Colors.white,
+    borderBottomColor: colors.gray200,
+    backgroundColor: colors.card,
   },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   saveButton: {
     ...Typography.button,
-    color: Colors.primary,
+    color: colors.primary,
   },
   scrollView: {
     flex: 1,
@@ -198,40 +202,40 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: Colors.gray100,
+    backgroundColor: colors.gray100,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.md,
     borderWidth: 3,
-    borderColor: Colors.primary,
+    borderColor: colors.primary,
   },
   avatarPreviewText: {
     fontSize: 50,
   },
   previewName: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text,
   },
   section: {
     marginBottom: Spacing.xl,
   },
   label: {
     ...Typography.labelLarge,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.sm,
   },
   input: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text,
     borderWidth: 1,
-    borderColor: Colors.gray300,
+    borderColor: colors.border,
   },
   helperText: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: Spacing.xs,
   },
   avatarScroll: {
@@ -246,15 +250,15 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: BorderRadius.medium,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: Colors.gray300,
+    borderColor: colors.border,
     position: 'relative',
   },
   avatarOptionSelected: {
-    borderColor: Colors.primary,
+    borderColor: colors.primary,
     borderWidth: 3,
   },
   avatarOptionText: {
@@ -264,7 +268,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     width: 24,
     height: 24,
     borderRadius: 12,
@@ -273,14 +277,14 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: Colors.primary + '10',
+    backgroundColor: colors.primary + '10',
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     gap: Spacing.sm,
   },
   infoText: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     flex: 1,
     lineHeight: 20,
   },

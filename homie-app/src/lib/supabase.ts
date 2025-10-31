@@ -73,10 +73,12 @@ export interface Database {
           points: number;
           status: 'pending' | 'in_progress' | 'completed';
           due_date: string | null;
-          estimated_minutes: number | null;
-          actual_minutes: number | null;
+          category_id: string | null;
+          has_subtasks: boolean;
+          completed_subtask_ids: string[] | null;
           created_at: string;
           completed_at: string | null;
+          recurring_task_id: string | null;
         };
         Insert: Omit<Database['public']['Tables']['tasks']['Row'], 'id' | 'created_at'>;
         Update: Partial<Database['public']['Tables']['tasks']['Insert']>;
@@ -171,6 +173,72 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['member_badges']['Row'], 'id' | 'earned_at'>;
         Update: Partial<Database['public']['Tables']['member_badges']['Insert']>;
       };
+      task_categories: {
+        Row: {
+          id: string;
+          household_id: string;
+          name: string;
+          icon: string;
+          color: string;
+          created_by: string | null;
+          is_custom: boolean;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['task_categories']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['task_categories']['Insert']>;
+      };
+      subtasks: {
+        Row: {
+          id: string;
+          task_id: string;
+          title: string;
+          points: number;
+          is_completed: boolean;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['subtasks']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['subtasks']['Insert']>;
+      };
+      task_photos: {
+        Row: {
+          id: string;
+          task_id: string;
+          photo_url: string;
+          uploaded_by: string | null;
+          uploaded_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['task_photos']['Row'], 'id' | 'uploaded_at'>;
+        Update: Partial<Database['public']['Tables']['task_photos']['Insert']>;
+      };
+      recurring_tasks: {
+        Row: {
+          id: string;
+          household_id: string;
+          title: string;
+          description: string | null;
+          category: string | null;
+          room: string | null;
+          estimated_minutes: number | null;
+          points: number;
+          assignee_id: string | null;
+          assignee_rotation: string[];
+          rotation_interval_value: number;
+          rotation_interval_unit: 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year';
+          current_rotation_index: number;
+          last_rotation_at: string | null;
+          manual_override_until: string | null;
+          recurrence_rule: any;
+          is_active: boolean;
+          next_occurrence_at: string | null;
+          last_generated_at: string | null;
+          total_occurrences: number;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['recurring_tasks']['Row'], 'id' | 'created_at'>;
+        Update: Partial<Database['public']['Tables']['recurring_tasks']['Insert']>;
+      };
     };
   };
 }
@@ -202,13 +270,13 @@ export const auth = {
   },
 
   getSession: async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session;
+    const { data, error } = await supabase.auth.getSession();
+    return { data, error };
   },
 
   resetPassword: async (email: string) => {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'homie://reset-password',
+      redirectTo: 'homie://auth/reset-password',
     });
     return { data, error };
   },

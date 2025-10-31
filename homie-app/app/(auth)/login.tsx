@@ -13,17 +13,22 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { ERRORS } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { signIn } = useAuth();
+  const colors = useThemeColors();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
+  const styles = createStyles(colors);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -93,7 +98,7 @@ export default function LoginScreen() {
                 <TextInput
                   style={[styles.input, errors.email ? styles.inputError : undefined]}
                   placeholder="your@email.com"
-                  placeholderTextColor={Colors.gray500}
+                  placeholderTextColor={colors.text.tertiary}
                   value={email}
                   onChangeText={(text) => {
                     setEmail(text);
@@ -112,21 +117,30 @@ export default function LoginScreen() {
               {/* Password Input */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Password</Text>
-                <TextInput
-                  style={[styles.input, errors.password ? styles.inputError : undefined]}
-                  placeholder="Enter your password"
-                  placeholderTextColor={Colors.gray500}
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    if (errors.password) {
-                      setErrors({ ...errors, password: undefined });
-                    }
-                  }}
-                  secureTextEntry
-                  autoCapitalize="none"
-                  editable={!loading}
-                />
+                <View style={styles.passwordInputWrapper}>
+                  <TextInput
+                    style={[styles.passwordInput, errors.password ? styles.inputError : undefined]}
+                    placeholder="Enter your password"
+                    placeholderTextColor={colors.text.tertiary}
+                    value={password}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      if (errors.password) {
+                        setErrors({ ...errors, password: undefined });
+                      }
+                    }}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    editable={!loading}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setShowPassword(!showPassword)}
+                    disabled={loading}
+                  >
+                    <Text style={styles.eyeIconText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                  </TouchableOpacity>
+                </View>
                 {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
               </View>
 
@@ -142,7 +156,7 @@ export default function LoginScreen() {
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator color={Colors.white} />
+                  <ActivityIndicator color={colors.text.inverse} />
                 ) : (
                   <Text style={styles.loginButtonText}>Sign In</Text>
                 )}
@@ -166,10 +180,10 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background.primary,
   },
   keyboardView: {
     flex: 1,
@@ -188,12 +202,12 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h2,
-    color: Colors.text,
+    color: colors.text.primary,
     marginBottom: Spacing.sm,
   },
   subtitle: {
     ...Typography.bodyLarge,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   form: {
     marginBottom: Spacing.xl,
@@ -203,36 +217,61 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.labelLarge,
-    color: Colors.text,
+    color: colors.text.primary,
     marginBottom: Spacing.sm,
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.gray300,
+    borderColor: colors.border.default,
     borderRadius: BorderRadius.medium,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     fontSize: 16,
     fontFamily: 'Inter-Regular',
-    color: Colors.text,
-    backgroundColor: Colors.white,
+    color: colors.text.primary,
+    backgroundColor: colors.surface.primary,
+  },
+  passwordInputWrapper: {
+    position: 'relative',
+    width: '100%',
+  },
+  passwordInput: {
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    borderRadius: BorderRadius.medium,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    paddingRight: 50,
+    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    color: colors.text.primary,
+    backgroundColor: colors.surface.primary,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: Spacing.md,
+    top: Spacing.md,
+    padding: Spacing.xs,
+  },
+  eyeIconText: {
+    fontSize: 20,
   },
   inputError: {
-    borderColor: Colors.error,
+    borderColor: colors.error.default,
   },
   errorText: {
     ...Typography.bodySmall,
-    color: Colors.error,
+    color: colors.error.default,
     marginTop: Spacing.xs,
   },
   forgotPassword: {
     ...Typography.bodyMedium,
-    color: Colors.primary,
+    color: colors.primary.default,
     textAlign: 'right',
     marginBottom: Spacing.xl,
   },
   loginButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary.default,
     borderRadius: BorderRadius.full,
     paddingVertical: Spacing.md,
     alignItems: 'center',
@@ -243,7 +282,7 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     ...Typography.button,
-    color: Colors.white,
+    color: colors.text.inverse,
   },
   signUpContainer: {
     flexDirection: 'row',
@@ -252,11 +291,11 @@ const styles = StyleSheet.create({
   },
   signUpText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   signUpLink: {
     ...Typography.bodyMedium,
-    color: Colors.primary,
+    color: colors.primary.default,
     fontWeight: '600',
   },
 });

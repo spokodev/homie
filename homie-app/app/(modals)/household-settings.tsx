@@ -11,7 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useMembers } from '@/hooks/useMembers';
 import { useTasks } from '@/hooks/useTasks';
@@ -23,6 +24,7 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 export default function HouseholdSettingsScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { household, member } = useHousehold();
   const { data: members = [] } = useMembers(household?.id);
   const { data: tasks = [] } = useTasks(household?.id);
@@ -130,7 +132,7 @@ export default function HouseholdSettingsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -139,12 +141,14 @@ export default function HouseholdSettingsScreen() {
   // Calculate total points
   const totalPoints = members.reduce((sum, m) => sum + (m.points || 0), 0);
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color={Colors.text} />
+          <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Household Settings</Text>
         <View style={{ width: 24 }} />
@@ -209,7 +213,7 @@ export default function HouseholdSettingsScreen() {
                   disabled={isSaving}
                 >
                   {isSaving ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
+                    <ActivityIndicator size="small" color={colors.card} />
                   ) : (
                     <Text style={styles.buttonPrimaryText}>Save</Text>
                   )}
@@ -232,7 +236,7 @@ export default function HouseholdSettingsScreen() {
                   style={styles.editButton}
                   onPress={() => setIsEditingName(true)}
                 >
-                  <Ionicons name="pencil" size={20} color={Colors.primary} />
+                  <Ionicons name="pencil" size={20} color={colors.primary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -244,17 +248,17 @@ export default function HouseholdSettingsScreen() {
           <Text style={styles.sectionTitle}>Statistics</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
-              <Ionicons name="people" size={32} color={Colors.primary} />
+              <Ionicons name="people" size={32} color={colors.primary} />
               <Text style={styles.statValue}>{members.length}</Text>
               <Text style={styles.statLabel}>Members</Text>
             </View>
             <View style={styles.statCard}>
-              <Ionicons name="checkmark-circle" size={32} color={Colors.success} />
+              <Ionicons name="checkmark-circle" size={32} color={colors.success} />
               <Text style={styles.statValue}>{tasks.length}</Text>
               <Text style={styles.statLabel}>Active Tasks</Text>
             </View>
             <View style={styles.statCard}>
-              <Ionicons name="star" size={32} color={Colors.accent} />
+              <Ionicons name="star" size={32} color={colors.accent} />
               <Text style={styles.statValue}>{totalPoints}</Text>
               <Text style={styles.statLabel}>Total Points</Text>
             </View>
@@ -266,7 +270,7 @@ export default function HouseholdSettingsScreen() {
           <Text style={styles.sectionTitle}>Captain System</Text>
           <View style={styles.infoCard}>
             <View style={styles.captainInfo}>
-              <Ionicons name="shield" size={24} color={Colors.primary} />
+              <Ionicons name="shield" size={24} color={colors.primary} />
               <View style={styles.captainDetails}>
                 <Text style={styles.captainTitle}>Weekly Rotation</Text>
                 <Text style={styles.captainSubtext}>
@@ -276,7 +280,7 @@ export default function HouseholdSettingsScreen() {
             </View>
           </View>
           <View style={styles.tipCard}>
-            <Ionicons name="information-circle" size={20} color={Colors.secondary} />
+            <Ionicons name="information-circle" size={20} color={colors.secondary} />
             <Text style={styles.tipText}>
               The captain is responsible for keeping the household organized and motivated!
             </Text>
@@ -292,10 +296,10 @@ export default function HouseholdSettingsScreen() {
               onPress={() => router.push('/(modals)/household-members')}
             >
               <View style={styles.menuItemLeft}>
-                <Ionicons name="people-outline" size={20} color={Colors.primary} />
+                <Ionicons name="people-outline" size={20} color={colors.primary} />
                 <Text style={styles.menuItemText}>Manage Members</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
+              <Ionicons name="chevron-forward" size={20} color={colors.gray400} />
             </TouchableOpacity>
           </View>
         )}
@@ -303,7 +307,7 @@ export default function HouseholdSettingsScreen() {
         {/* Danger Zone */}
         {isAdmin && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: Colors.error }]}>Danger Zone</Text>
+            <Text style={[styles.sectionTitle, { color: colors.error }]}>Danger Zone</Text>
             <TouchableOpacity
               style={[styles.menuItem, styles.dangerItem]}
               onPress={handleDeleteHousehold}
@@ -311,18 +315,18 @@ export default function HouseholdSettingsScreen() {
             >
               <View style={styles.menuItemLeft}>
                 {isDeleting ? (
-                  <ActivityIndicator size="small" color={Colors.error} />
+                  <ActivityIndicator size="small" color={colors.error} />
                 ) : (
-                  <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                  <Ionicons name="trash-outline" size={20} color={colors.error} />
                 )}
-                <Text style={[styles.menuItemText, { color: Colors.error }]}>
+                <Text style={[styles.menuItemText, { color: colors.error }]}>
                   Delete Household
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={Colors.error} />
+              <Ionicons name="chevron-forward" size={20} color={colors.error} />
             </TouchableOpacity>
             <View style={styles.warningCard}>
-              <Ionicons name="warning" size={20} color={Colors.warning} />
+              <Ionicons name="warning" size={20} color={colors.warning} />
               <Text style={styles.warningText}>
                 Deleting the household will permanently remove all members, tasks, and data.
                 This action cannot be undone.
@@ -333,7 +337,7 @@ export default function HouseholdSettingsScreen() {
 
         {!isAdmin && (
           <View style={styles.infoCard}>
-            <Ionicons name="information-circle" size={20} color={Colors.secondary} />
+            <Ionicons name="information-circle" size={20} color={colors.secondary} />
             <Text style={styles.infoText}>
               Only household admins can modify these settings.
             </Text>
@@ -344,10 +348,10 @@ export default function HouseholdSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -361,12 +365,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   scrollView: {
     flex: 1,
@@ -379,14 +383,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.md,
   },
   infoCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     ...Shadows.small,
@@ -405,25 +409,25 @@ const styles = StyleSheet.create({
   },
   householdName: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: 4,
   },
   householdMeta: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   editButton: {
     padding: Spacing.sm,
   },
   editCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     ...Shadows.small,
   },
   label: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600',
     marginBottom: Spacing.sm,
   },
@@ -437,13 +441,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: BorderRadius.medium,
     borderWidth: 2,
-    borderColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     marginRight: Spacing.sm,
   },
   iconButtonSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '10',
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '10',
   },
   iconButtonText: {
     fontSize: 28,
@@ -462,19 +466,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonPrimary: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
   },
   buttonPrimaryText: {
     ...Typography.bodyLarge,
-    color: Colors.white,
+    color: colors.card,
     fontWeight: '600',
   },
   buttonSecondary: {
-    backgroundColor: Colors.gray300,
+    backgroundColor: colors.border,
   },
   buttonSecondaryText: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600',
   },
   statsGrid: {
@@ -483,7 +487,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     alignItems: 'center',
@@ -491,12 +495,12 @@ const styles = StyleSheet.create({
   },
   statValue: {
     ...Typography.h2,
-    color: Colors.text,
+    color: colors.text,
     marginVertical: Spacing.xs,
   },
   statLabel: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   captainInfo: {
@@ -509,17 +513,17 @@ const styles = StyleSheet.create({
   },
   captainTitle: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600',
     marginBottom: 4,
   },
   captainSubtext: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   tipCard: {
     flexDirection: 'row',
-    backgroundColor: Colors.secondary + '15',
+    backgroundColor: colors.secondary + '15',
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     marginTop: Spacing.sm,
@@ -527,7 +531,7 @@ const styles = StyleSheet.create({
   },
   tipText: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     flex: 1,
     lineHeight: 20,
   },
@@ -535,7 +539,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
@@ -548,28 +552,28 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text,
   },
   dangerItem: {
     borderWidth: 1,
-    borderColor: Colors.error + '30',
+    borderColor: colors.error + '30',
   },
   warningCard: {
     flexDirection: 'row',
-    backgroundColor: Colors.warning + '15',
+    backgroundColor: colors.warning + '15',
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     gap: Spacing.sm,
   },
   warningText: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     flex: 1,
     lineHeight: 20,
   },
   infoText: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     flex: 1,
     lineHeight: 20,
   },

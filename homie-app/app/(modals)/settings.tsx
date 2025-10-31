@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useTheme, useThemeColors } from '@/contexts/ThemeContext';
 import { useAppStore } from '@/stores/app.store';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -19,6 +20,8 @@ import { useNotifications } from '@/hooks/useNotifications';
 export default function SettingsScreen() {
   const router = useRouter();
   const { household } = useHousehold();
+  const colors = useThemeColors();
+  const { colorScheme, toggleTheme, isSystemTheme, setIsSystemTheme } = useTheme();
   const { notificationsEnabled, setNotificationsEnabled } = useAppStore();
   const { enableNotifications, disableNotifications } = useNotifications();
 
@@ -39,14 +42,16 @@ export default function SettingsScreen() {
     );
   };
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface.primary, borderBottomColor: colors.border.default }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color={Colors.text} />
+          <Ionicons name="close" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Settings</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -65,6 +70,53 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Appearance Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Appearance</Text>
+
+          {/* Theme Toggle */}
+          <View style={styles.settingItem}>
+            <View style={styles.settingLeft}>
+              <Ionicons
+                name={colorScheme === 'dark' ? 'moon-outline' : 'sunny-outline'}
+                size={20}
+                color={colors.primary.default}
+              />
+              <View style={styles.settingText}>
+                <Text style={styles.settingTitle}>Dark Mode</Text>
+                <Text style={styles.settingDescription}>
+                  {colorScheme === 'dark' ? 'Dark theme enabled' : 'Light theme enabled'}
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={colorScheme === 'dark'}
+              onValueChange={toggleTheme}
+              trackColor={{ false: colors.border.default, true: colors.primary.default + '50' }}
+              thumbColor={colorScheme === 'dark' ? colors.primary.default : colors.border.default}
+            />
+          </View>
+
+          {/* System Theme Toggle */}
+          <View style={styles.settingItem}>
+            <View style={styles.settingLeft}>
+              <Ionicons name="phone-portrait-outline" size={20} color={colors.primary.default} />
+              <View style={styles.settingText}>
+                <Text style={styles.settingTitle}>Use System Theme</Text>
+                <Text style={styles.settingDescription}>
+                  Follow your device's appearance settings
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={isSystemTheme}
+              onValueChange={setIsSystemTheme}
+              trackColor={{ false: colors.border.default, true: colors.primary.default + '50' }}
+              thumbColor={isSystemTheme ? colors.primary.default : colors.border.default}
+            />
+          </View>
+        </View>
+
         {/* Task Management Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Task Management</Text>
@@ -73,10 +125,10 @@ export default function SettingsScreen() {
             onPress={() => router.push('/(modals)/recurring-tasks')}
           >
             <View style={styles.menuItemLeft}>
-              <Ionicons name="repeat-outline" size={20} color={Colors.primary} />
+              <Ionicons name="repeat-outline" size={20} color={colors.primary.default} />
               <Text style={styles.menuItemText}>Recurring Tasks</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={Colors.gray500} />
+            <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
           </TouchableOpacity>
         </View>
 
@@ -85,17 +137,27 @@ export default function SettingsScreen() {
           <Text style={styles.sectionTitle}>Notifications</Text>
           <TouchableOpacity
             style={styles.menuItem}
+            onPress={() => router.push('/(modals)/notification-settings')}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="settings-outline" size={20} color={colors.primary.default} />
+              <Text style={styles.menuItemText}>Notification Settings</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuItem}
             onPress={() => router.push('/(modals)/notifications')}
           >
             <View style={styles.menuItemLeft}>
-              <Ionicons name="list-outline" size={20} color={Colors.primary} />
+              <Ionicons name="list-outline" size={20} color={colors.primary.default} />
               <Text style={styles.menuItemText}>View Notifications</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
+            <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
           </TouchableOpacity>
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
-              <Ionicons name="notifications-outline" size={20} color={Colors.primary} />
+              <Ionicons name="notifications-outline" size={20} color={colors.primary.default} />
               <View style={styles.settingText}>
                 <Text style={styles.settingTitle}>Push Notifications</Text>
                 <Text style={styles.settingDescription}>
@@ -106,8 +168,8 @@ export default function SettingsScreen() {
             <Switch
               value={notificationsEnabled}
               onValueChange={handleNotificationToggle}
-              trackColor={{ false: Colors.gray300, true: Colors.primary + '50' }}
-              thumbColor={notificationsEnabled ? Colors.primary : Colors.gray400}
+              trackColor={{ false: colors.border.default, true: colors.primary.default + '50' }}
+              thumbColor={notificationsEnabled ? colors.primary.default : colors.text.tertiary}
             />
           </View>
         </View>
@@ -117,21 +179,21 @@ export default function SettingsScreen() {
           <Text style={styles.sectionTitle}>About</Text>
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
-              <Ionicons name="document-text-outline" size={20} color={Colors.primary} />
+              <Ionicons name="document-text-outline" size={20} color={colors.primary.default} />
               <Text style={styles.menuItemText}>Privacy Policy</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
+            <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
-              <Ionicons name="shield-checkmark-outline" size={20} color={Colors.primary} />
+              <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary.default} />
               <Text style={styles.menuItemText}>Terms of Service</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
+            <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
           </TouchableOpacity>
           <View style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
-              <Ionicons name="information-circle-outline" size={20} color={Colors.primary} />
+              <Ionicons name="information-circle-outline" size={20} color={colors.primary.default} />
               <Text style={styles.menuItemText}>Version</Text>
             </View>
             <Text style={styles.versionText}>1.0.0</Text>
@@ -140,22 +202,22 @@ export default function SettingsScreen() {
 
         {/* Danger Zone */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: Colors.error }]}>Danger Zone</Text>
+          <Text style={[styles.sectionTitle, { color: colors.error.default }]}>Danger Zone</Text>
           <TouchableOpacity
             style={[styles.menuItem, styles.dangerItem]}
             onPress={handleDeleteAccount}
           >
             <View style={styles.menuItemLeft}>
-              <Ionicons name="trash-outline" size={20} color={Colors.error} />
-              <Text style={[styles.menuItemText, { color: Colors.error }]}>Delete Account</Text>
+              <Ionicons name="trash-outline" size={20} color={colors.error.default} />
+              <Text style={[styles.menuItemText, { color: colors.error.default }]}>Delete Account</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={Colors.error} />
+            <Ionicons name="chevron-forward" size={20} color={colors.error.default} />
           </TouchableOpacity>
         </View>
 
         {/* Coming Soon Note */}
         <View style={styles.comingSoonCard}>
-          <Ionicons name="construct" size={24} color={Colors.primary} />
+          <Ionicons name="construct" size={24} color={colors.primary.default} />
           <View style={{ flex: 1 }}>
             <Text style={styles.comingSoonTitle}>More Settings Coming Soon</Text>
             <Text style={styles.comingSoonText}>
@@ -168,10 +230,10 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background.primary,
   },
   header: {
     flexDirection: 'row',
@@ -180,12 +242,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray200,
-    backgroundColor: Colors.white,
+    borderBottomColor: colors.border.default,
+    backgroundColor: colors.surface.primary,
   },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text.primary,
   },
   scrollView: {
     flex: 1,
@@ -198,14 +260,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text.primary,
     marginBottom: Spacing.md,
   },
   infoCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.surface.primary,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
-    shadowColor: '#000',
+    shadowColor: colors.shadow.medium,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -221,21 +283,21 @@ const styles = StyleSheet.create({
   },
   householdName: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text.primary,
     fontWeight: '600',
   },
   householdLabel: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   settingItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.surface.primary,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
-    shadowColor: '#000',
+    shadowColor: colors.shadow.medium,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -252,22 +314,22 @@ const styles = StyleSheet.create({
   },
   settingTitle: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text.primary,
     marginBottom: 2,
   },
   settingDescription: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.surface.primary,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
-    shadowColor: '#000',
+    shadowColor: colors.shadow.medium,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -280,19 +342,19 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text.primary,
   },
   versionText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   dangerItem: {
     borderWidth: 1,
-    borderColor: Colors.error + '30',
+    borderColor: colors.error.subtle,
   },
   comingSoonCard: {
     flexDirection: 'row',
-    backgroundColor: Colors.primary + '10',
+    backgroundColor: colors.primary.subtle,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     gap: Spacing.md,
@@ -300,12 +362,12 @@ const styles = StyleSheet.create({
   },
   comingSoonTitle: {
     ...Typography.labelLarge,
-    color: Colors.text,
+    color: colors.text.primary,
     marginBottom: Spacing.xs,
   },
   comingSoonText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     lineHeight: 20,
   },
 });

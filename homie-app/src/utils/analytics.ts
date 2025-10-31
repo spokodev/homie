@@ -1,4 +1,7 @@
-import posthog from 'posthog-react-native';
+import posthog, { PostHog } from 'posthog-react-native';
+
+// Store the PostHog client instance
+let posthogClient: PostHog | null = null;
 
 // Analytics event names
 export const ANALYTICS_EVENTS = {
@@ -73,7 +76,7 @@ export const ANALYTICS_EVENTS = {
 /**
  * Initialize PostHog analytics
  */
-export function initializeAnalytics() {
+export async function initializeAnalytics() {
   const apiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY;
   const host = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com';
 
@@ -85,10 +88,9 @@ export function initializeAnalytics() {
   }
 
   try {
-    posthog.initAsync(apiKey, {
+    posthogClient = await posthog.initAsync(apiKey, {
       host,
-      captureApplicationLifecycleEvents: true, // Capture app open, close events
-      captureDeepLinks: true, // Capture deep link events
+      // Note: captureApplicationLifecycleEvents removed as it's not in PostHogOptions type
     });
 
     if (__DEV__) {
@@ -111,7 +113,9 @@ export function trackEvent(
   }
 
   try {
-    posthog.capture(eventName, properties);
+    if (posthogClient) {
+      posthogClient.capture(eventName, properties);
+    }
   } catch (error) {
     console.error('[Analytics] Failed to track event:', error);
   }
@@ -137,7 +141,9 @@ export function identifyUser(
   }
 
   try {
-    posthog.identify(userId, properties);
+    if (posthogClient) {
+      posthogClient.identify(userId, properties);
+    }
   } catch (error) {
     console.error('[Analytics] Failed to identify user:', error);
   }
@@ -152,7 +158,9 @@ export function resetUser() {
   }
 
   try {
-    posthog.reset();
+    if (posthogClient) {
+      posthogClient.reset();
+    }
   } catch (error) {
     console.error('[Analytics] Failed to reset user:', error);
   }
@@ -167,7 +175,9 @@ export function setUserProperties(properties: Record<string, any>) {
   }
 
   try {
-    posthog.capture('$set', { $set: properties });
+    if (posthogClient) {
+      posthogClient.capture('$set', { $set: properties });
+    }
   } catch (error) {
     console.error('[Analytics] Failed to set user properties:', error);
   }

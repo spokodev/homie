@@ -6,12 +6,15 @@ import { trackEvent, ANALYTICS_EVENTS } from './analytics';
 
 /**
  * Configure notification behavior when app is in foreground
+ * SDK 54+ requires shouldShowBanner and shouldShowList
  */
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -99,17 +102,25 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
 }
 
 /**
- * Save push token to user's member profile
+ * Save push token to database
  */
 export async function savePushTokenToDatabase(
   memberId: string,
   pushToken: string
 ): Promise<void> {
   try {
+    const deviceType = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
+
     const { error } = await supabase
-      .from('members')
-      .update({ push_token: pushToken })
-      .eq('id', memberId);
+      .from('push_tokens')
+      .upsert({
+        member_id: memberId,
+        token: pushToken,
+        device_type: deviceType,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'member_id'
+      });
 
     if (error) throw error;
     console.log('Push token saved to database');
@@ -125,9 +136,9 @@ export async function savePushTokenToDatabase(
 export async function removePushTokenFromDatabase(memberId: string): Promise<void> {
   try {
     const { error } = await supabase
-      .from('members')
-      .update({ push_token: null })
-      .eq('id', memberId);
+      .from('push_tokens')
+      .delete()
+      .eq('member_id', memberId);
 
     if (error) throw error;
     console.log('Push token removed from database');
@@ -155,7 +166,11 @@ export async function scheduleLocalNotification(
         sound: true,
         priority: Notifications.AndroidNotificationPriority.HIGH,
       },
-      trigger: seconds === 0 ? null : { seconds },
+      trigger: seconds === 0 ? null : {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds,
+        repeats: false,
+      },
     });
     return id;
   } catch (error) {

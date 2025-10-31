@@ -7,28 +7,39 @@ import {
   ScrollView,
   ActivityIndicator,
   Switch,
+  Share,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useCreateMember } from '@/hooks/useMembers';
+import { useCreateInvitation } from '@/hooks/useInvitations';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { TextInput } from '@/components/Form/TextInput';
 import { useToast } from '@/components/Toast';
 import { COMMON_AVATARS, PET_AVATARS } from '@/constants';
 import { trackEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
+import * as Clipboard from 'expo-clipboard';
+import QRCode from 'react-native-qrcode-svg';
 
 export default function AddMemberModal() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { household, member: currentMember } = useHousehold();
   const createMember = useCreateMember();
+  const createInvitation = useCreateInvitation();
   const { showToast } = useToast();
 
   const [name, setName] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('😊');
   const [isPet, setIsPet] = useState(false);
   const [errors, setErrors] = useState<{ name?: string }>({});
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showQR, setShowQR] = useState(false);
 
   // Switch avatars based on pet/human type
   const avatars = isPet ? PET_AVATARS : COMMON_AVATARS;
@@ -63,7 +74,8 @@ export default function AddMemberModal() {
     }
 
     try {
-      await createMember.mutateAsync({
+      // Create the member
+      const newMember = await createMember.mutateAsync({
         household_id: household.id,
         name: name.trim(),
         avatar: selectedAvatar,
@@ -73,37 +85,169 @@ export default function AddMemberModal() {
         user_id: undefined,
       });
 
+      // For human members, create an invitation
+      if (!isPet) {
+        try {
+          const invitation = await createInvitation.mutateAsync({
+            household_id: household.id,
+            member_id: newMember.id,
+            member_name: name.trim(),
+            invited_by: currentMember.id,
+          });
+
+          setInviteCode(invitation.invite_code);
+          setShowInviteModal(true);
+        } catch (inviteError: any) {
+          console.error('Failed to create invitation:', inviteError);
+          // Still show success but warn about invitation
+          showToast('Member added but invitation failed', 'warning');
+          router.back();
+        }
+      } else {
+        // For pets, just show success
+        showToast('Pet added successfully! 🐾', 'success');
+        router.back();
+      }
+
       // Track member added
       trackEvent(ANALYTICS_EVENTS.MEMBER_ADDED, {
         member_type: isPet ? 'pet' : 'human',
         member_role: 'member',
+        with_invitation: !isPet,
       });
 
-      showToast(
-        isPet ? 'Pet added successfully! 🐾' : 'Member added successfully!',
-        'success'
-      );
-      router.back();
     } catch (error: any) {
       showToast(error.message || 'Failed to add member', 'error');
     }
   };
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.cancelButton}>Cancel</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Member</Text>
-        <TouchableOpacity onPress={handleCreate} disabled={createMember.isPending}>
-          {createMember.isPending ? (
-            <ActivityIndicator size="small" color={Colors.primary} />
+  const handleCopyCode = async () => {
+    if (inviteCode) {
+      await Clipboard.setStringAsync(inviteCode);
+      showToast('Invitation code copied!', 'success');
+    }
+  };
+
+  const handleShareCode = async () => {
+    if (inviteCode && household) {
+      try {
+        const message = `Join my family "${household.name}" on HomieLife!\n\nInvitation code: ${inviteCode}\n\n1. Download HomieLife app\n2. Sign up or log in\n3. Enter this code to join`;
+
+        if (Platform.OS === 'ios' || Platform.OS === 'android') {
+          await Share.share({
+            message,
+            title: 'HomieLife Invitation',
+          });
+        }
+      } catch (error) {
+        console.error('Error sharing:', error);
+      }
+    }
+  };
+
+  const InviteCodeModal = () => {
+    if (!showInviteModal || !inviteCode) return null;
+
+    return (
+      <View style={styles.modalOverlay}>
+        <View style={styles.inviteModal}>
+          <Text style={styles.inviteTitle}>Member Added! 🎉</Text>
+          <Text style={styles.inviteSubtitle}>
+            Share this code with {name} to let them join your household:
+          </Text>
+
+          {/* Toggle between Code and QR */}
+          <View style={styles.viewToggle}>
+            <TouchableOpacity
+              style={[styles.toggleOption, !showQR && styles.toggleOptionActive]}
+              onPress={() => setShowQR(false)}
+            >
+              <Text style={[styles.toggleOptionText, !showQR && styles.toggleOptionTextActive]}>
+                Code
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleOption, showQR && styles.toggleOptionActive]}
+              onPress={() => setShowQR(true)}
+            >
+              <Text style={[styles.toggleOptionText, showQR && styles.toggleOptionTextActive]}>
+                QR Code
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Code or QR Display */}
+          {showQR ? (
+            <View style={styles.qrContainer}>
+              <QRCode
+                value={`homielife://join/${inviteCode}`}
+                size={200}
+                backgroundColor="white"
+                color={colors.primary}
+              />
+              <Text style={styles.qrHint}>Scan with HomieLife app</Text>
+            </View>
           ) : (
-            <Text style={styles.createButton}>Add</Text>
+            <View style={styles.codeContainer}>
+              <Text style={styles.inviteCode}>{inviteCode}</Text>
+            </View>
           )}
-        </TouchableOpacity>
+
+          <View style={styles.inviteActions}>
+            <TouchableOpacity
+              style={[styles.inviteButton, styles.copyButton]}
+              onPress={handleCopyCode}
+            >
+              <Ionicons name="copy-outline" size={20} color={colors.card} />
+              <Text style={styles.inviteButtonText}>Copy Code</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.inviteButton, styles.shareButton]}
+              onPress={handleShareCode}
+            >
+              <Ionicons name="share-outline" size={20} color={colors.card} />
+              <Text style={styles.inviteButtonText}>Share</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.inviteNote}>
+            This code expires in 7 days. They can enter it when signing up or scan the QR code.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.doneButton}
+            onPress={() => {
+              setShowInviteModal(false);
+              setShowQR(false);
+              router.back();
+            }}
+          >
+            <Text style={styles.doneButtonText}>Done</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+    );
+  };
+
+  const styles = createStyles(colors);
+
+  return (
+    <>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.cancelButton}>Cancel</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Add Member</Text>
+          <TouchableOpacity onPress={handleCreate} disabled={createMember.isPending}>
+            {createMember.isPending ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Text style={styles.createButton}>Add</Text>
+            )}
+          </TouchableOpacity>
+        </View>
 
       <ScrollView
         style={styles.scrollView}
@@ -128,8 +272,8 @@ export default function AddMemberModal() {
               <Switch
                 value={isPet}
                 onValueChange={setIsPet}
-                trackColor={{ false: Colors.gray300, true: Colors.secondary }}
-                thumbColor={isPet ? Colors.white : Colors.white}
+                trackColor={{ false: colors.gray300, true: colors.secondary }}
+                thumbColor={isPet ? colors.card : colors.card}
               />
               <Text style={styles.toggleIcon}>🐾</Text>
             </View>
@@ -189,7 +333,7 @@ export default function AddMemberModal() {
           <Ionicons
             name={isPet ? 'paw' : 'information-circle'}
             size={20}
-            color={Colors.secondary}
+            color={colors.secondary}
           />
           <Text style={styles.infoText}>
             {isPet
@@ -200,21 +344,23 @@ export default function AddMemberModal() {
 
         {currentMember?.role !== 'admin' && (
           <View style={[styles.infoCard, styles.warningCard]}>
-            <Ionicons name="warning" size={20} color={Colors.warning} />
+            <Ionicons name="warning" size={20} color={colors.warning} />
             <Text style={styles.infoText}>
               Only household admins can add new members.
             </Text>
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+      <InviteCodeModal />
+    </>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -223,20 +369,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderBottomColor: colors.gray300,
+    backgroundColor: colors.card,
   },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   cancelButton: {
     ...Typography.bodyLarge,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   createButton: {
     ...Typography.bodyLarge,
-    color: Colors.primary,
+    color: colors.primary,
     fontWeight: '600',
   },
   scrollView: {
@@ -252,7 +398,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     padding: Spacing.md,
     borderRadius: BorderRadius.medium,
   },
@@ -262,13 +408,13 @@ const styles = StyleSheet.create({
   },
   toggleLabel: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600',
     marginBottom: 4,
   },
   toggleSubtext: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   toggleContainer: {
@@ -281,16 +427,16 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600',
     marginBottom: Spacing.sm,
   },
   required: {
-    color: Colors.error,
+    color: colors.error,
   },
   avatarPreview: {
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.large,
     padding: Spacing.xl,
     marginBottom: Spacing.md,
@@ -301,7 +447,7 @@ const styles = StyleSheet.create({
   },
   avatarPreviewText: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   avatarsGrid: {
     flexDirection: 'row',
@@ -315,31 +461,154 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: BorderRadius.medium,
     borderWidth: 2,
-    borderColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderColor: colors.gray300,
+    backgroundColor: colors.card,
   },
   avatarButtonSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '10',
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '10',
   },
   avatarButtonText: {
     fontSize: 28,
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: Colors.secondary + '15',
+    backgroundColor: colors.secondary + '15',
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     marginTop: Spacing.md,
     gap: Spacing.sm,
   },
   warningCard: {
-    backgroundColor: Colors.warning + '15',
+    backgroundColor: colors.warning + '15',
   },
   infoText: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     flex: 1,
     lineHeight: 20,
+  },
+  // Invitation modal styles
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
+  },
+  inviteModal: {
+    backgroundColor: colors.card,
+    borderRadius: BorderRadius.large,
+    padding: Spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  inviteTitle: {
+    ...Typography.h3,
+    color: colors.text,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
+  },
+  inviteSubtitle: {
+    ...Typography.bodyLarge,
+    color: colors.textSecondary,
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
+  },
+  codeContainer: {
+    backgroundColor: colors.gray100,
+    borderRadius: BorderRadius.medium,
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    marginBottom: Spacing.lg,
+  },
+  inviteCode: {
+    ...Typography.h2,
+    color: colors.primary,
+    fontWeight: 'bold',
+    letterSpacing: 4,
+  },
+  inviteActions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  inviteButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.medium,
+    gap: Spacing.xs,
+  },
+  copyButton: {
+    backgroundColor: colors.secondary,
+  },
+  shareButton: {
+    backgroundColor: colors.primary,
+  },
+  inviteButtonText: {
+    ...Typography.bodyMedium,
+    color: colors.card,
+    fontWeight: '600',
+  },
+  inviteNote: {
+    ...Typography.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+    lineHeight: 18,
+  },
+  doneButton: {
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+  },
+  doneButtonText: {
+    ...Typography.bodyLarge,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  // QR Code styles
+  viewToggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.gray100,
+    borderRadius: BorderRadius.medium,
+    padding: 4,
+    marginBottom: Spacing.lg,
+  },
+  toggleOption: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.small,
+    alignItems: 'center',
+  },
+  toggleOptionActive: {
+    backgroundColor: colors.card,
+  },
+  toggleOptionText: {
+    ...Typography.bodyMedium,
+    color: colors.textSecondary,
+  },
+  toggleOptionTextActive: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  qrContainer: {
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  qrHint: {
+    ...Typography.bodySmall,
+    color: colors.textSecondary,
+    marginTop: Spacing.sm,
   },
 });

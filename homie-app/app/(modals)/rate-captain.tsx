@@ -10,7 +10,8 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useRateCaptain, useHasRatedCaptain } from '@/hooks/useRatings';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { TextArea } from '@/components/Form/TextArea';
@@ -19,6 +20,7 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 export default function RateCaptainModal() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { captainId, captainName, rotationStart, rotationEnd } =
     useLocalSearchParams<{
       captainId: string;
@@ -79,7 +81,7 @@ export default function RateCaptainModal() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -96,7 +98,7 @@ export default function RateCaptainModal() {
           <View style={{ width: 60 }} />
         </View>
         <View style={styles.alreadyRatedContainer}>
-          <Ionicons name="checkmark-circle" size={64} color={Colors.success} />
+          <Ionicons name="checkmark-circle" size={64} color={colors.success} />
           <Text style={styles.alreadyRatedTitle}>Already Rated!</Text>
           <Text style={styles.alreadyRatedText}>
             You've already submitted your rating for this captain rotation.
@@ -105,6 +107,8 @@ export default function RateCaptainModal() {
       </SafeAreaView>
     );
   }
+
+  const styles = createStyles(colors);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -115,7 +119,7 @@ export default function RateCaptainModal() {
         <Text style={styles.headerTitle}>Rate Captain</Text>
         <TouchableOpacity onPress={handleSubmit} disabled={rateCaptain.isPending}>
           {rateCaptain.isPending ? (
-            <ActivityIndicator size="small" color={Colors.primary} />
+            <ActivityIndicator size="small" color={colors.primary} />
           ) : (
             <Text style={styles.submitButton}>Submit</Text>
           )}
@@ -129,7 +133,7 @@ export default function RateCaptainModal() {
       >
         {/* Captain Info */}
         <View style={styles.captainInfoCard}>
-          <Ionicons name="person-circle" size={48} color={Colors.primary} />
+          <Ionicons name="person-circle" size={48} color={colors.primary} />
           <Text style={styles.captainNameText}>{captainName}</Text>
           <Text style={styles.captainSubtext}>Captain of the Week</Text>
         </View>
@@ -148,7 +152,7 @@ export default function RateCaptainModal() {
                 <Ionicons
                   name={selectedRating >= star ? 'star' : 'star-outline'}
                   size={48}
-                  color={selectedRating >= star ? Colors.accent : Colors.gray500}
+                  color={selectedRating >= star ? colors.accent : colors.gray500}
                 />
               </TouchableOpacity>
             ))}
@@ -194,10 +198,10 @@ function getRatingLabel(rating: number): string {
   return labels[rating as keyof typeof labels] || '';
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -206,20 +210,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   cancelButton: {
     ...Typography.bodyLarge,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   submitButton: {
     ...Typography.bodyLarge,
-    color: Colors.primary,
+    color: colors.primary,
     fontWeight: '600',
   },
   loadingContainer: {
@@ -235,12 +239,12 @@ const styles = StyleSheet.create({
   },
   alreadyRatedTitle: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text,
     marginTop: Spacing.md,
   },
   alreadyRatedText: {
     ...Typography.bodyLarge,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: Spacing.sm,
   },
@@ -251,7 +255,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   captainInfoCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.large,
     padding: Spacing.xl,
     alignItems: 'center',
@@ -260,12 +264,12 @@ const styles = StyleSheet.create({
   },
   captainNameText: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text,
     marginTop: Spacing.sm,
   },
   captainSubtext: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   section: {
@@ -273,7 +277,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.md,
   },
   starsContainer: {
@@ -287,14 +291,14 @@ const styles = StyleSheet.create({
   },
   ratingLabel: {
     ...Typography.bodyLarge,
-    color: Colors.accent,
+    color: colors.accent,
     textAlign: 'center',
     fontWeight: '600',
     marginTop: Spacing.sm,
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: Colors.accent + '15',
+    backgroundColor: colors.accent + '15',
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     marginTop: Spacing.lg,
@@ -305,7 +309,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     flex: 1,
     lineHeight: 20,
   },

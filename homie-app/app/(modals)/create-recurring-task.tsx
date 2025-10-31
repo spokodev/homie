@@ -7,12 +7,12 @@ import {
   TextInput,
   ScrollView,
   Switch,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useCreateRecurringTask } from '@/hooks/useRecurringTasks';
 import { useMembers } from '@/hooks/useMembers';
@@ -24,7 +24,7 @@ import {
   RecurrenceRule,
   getRecurrenceDescription,
 } from '@/types/recurrence';
-import { showToast } from '@/components/Toast';
+import { useToast } from '@/components/Toast';
 
 const DAYS_OF_WEEK: { id: DayOfWeek; label: string }[] = [
   { id: 'monday', label: 'Mon' },
@@ -38,10 +38,11 @@ const DAYS_OF_WEEK: { id: DayOfWeek; label: string }[] = [
 
 export default function CreateRecurringTaskScreen() {
   const router = useRouter();
-  const { household } = useHousehold();
+  const colors = useThemeColors();
   const { data: members = [] } = useMembers();
   const { data: rooms = [] } = useRooms();
   const createRecurringTask = useCreateRecurringTask();
+  const { showToast } = useToast();
 
   // Task fields
   const [title, setTitle] = useState('');
@@ -135,12 +136,14 @@ export default function CreateRecurringTaskScreen() {
     endAfterOccurrences: hasEndDate && endAfterOccurrences ? parseInt(endAfterOccurrences) : undefined,
   };
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color={Colors.text} />
+          <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Recurring Task</Text>
         <TouchableOpacity onPress={handleCreate} disabled={loading}>
@@ -160,7 +163,7 @@ export default function CreateRecurringTaskScreen() {
             placeholder="Task title *"
             value={title}
             onChangeText={setTitle}
-            placeholderTextColor={Colors.textSecondary}
+            placeholderTextColor={colors.textSecondary}
           />
 
           <TextInput
@@ -170,7 +173,7 @@ export default function CreateRecurringTaskScreen() {
             onChangeText={setDescription}
             multiline
             numberOfLines={3}
-            placeholderTextColor={Colors.textSecondary}
+            placeholderTextColor={colors.textSecondary}
           />
 
           <View style={styles.row}>
@@ -182,7 +185,7 @@ export default function CreateRecurringTaskScreen() {
                 value={estimatedMinutes}
                 onChangeText={setEstimatedMinutes}
                 keyboardType="number-pad"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
               />
             </View>
           </View>
@@ -220,7 +223,7 @@ export default function CreateRecurringTaskScreen() {
               value={interval}
               onChangeText={setInterval}
               keyboardType="number-pad"
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
             />
             <Text style={styles.label}>{frequency === 'daily' ? 'day(s)' : frequency === 'weekly' ? 'week(s)' : 'month(s)'}</Text>
           </View>
@@ -263,7 +266,7 @@ export default function CreateRecurringTaskScreen() {
                 onChangeText={setDayOfMonth}
                 keyboardType="number-pad"
                 placeholder="1"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
               />
               <Text style={styles.helperText}>(1-31)</Text>
             </View>
@@ -276,8 +279,8 @@ export default function CreateRecurringTaskScreen() {
               <Switch
                 value={hasEndDate}
                 onValueChange={setHasEndDate}
-                trackColor={{ false: Colors.gray300, true: Colors.primary + '50' }}
-                thumbColor={hasEndDate ? Colors.primary : Colors.gray500}
+                trackColor={{ false: colors.border, true: colors.primary + '50' }}
+                thumbColor={hasEndDate ? colors.primary : colors.gray500}
               />
             </View>
             {hasEndDate && (
@@ -287,14 +290,14 @@ export default function CreateRecurringTaskScreen() {
                 value={endAfterOccurrences}
                 onChangeText={setEndAfterOccurrences}
                 keyboardType="number-pad"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
               />
             )}
           </View>
 
           {/* Preview */}
           <View style={styles.previewContainer}>
-            <Ionicons name="refresh-outline" size={20} color={Colors.primary} />
+            <Ionicons name="refresh-outline" size={20} color={colors.primary} />
             <Text style={styles.previewText}>{getRecurrenceDescription(previewRule)}</Text>
           </View>
         </View>
@@ -379,10 +382,10 @@ export default function CreateRecurringTaskScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -391,16 +394,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   createButton: {
     ...Typography.button,
-    color: Colors.primary,
+    color: colors.primary,
   },
   createButtonDisabled: {
     opacity: 0.5,
@@ -410,22 +413,22 @@ const styles = StyleSheet.create({
   },
   section: {
     padding: Spacing.lg,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     marginTop: Spacing.md,
   },
   sectionTitle: {
     ...Typography.h5,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.md,
   },
   input: {
     ...Typography.bodyLarge,
     borderWidth: 1,
-    borderColor: Colors.gray300,
+    borderColor: colors.border,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     marginBottom: Spacing.md,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
   },
   textArea: {
     height: 80,
@@ -440,7 +443,7 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.labelLarge,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.xs,
   },
   frequencyContainer: {
@@ -454,20 +457,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.medium,
     borderWidth: 1,
-    borderColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     alignItems: 'center',
   },
   frequencyButtonActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   frequencyButtonText: {
     ...Typography.button,
-    color: Colors.text,
+    color: colors.text,
   },
   frequencyButtonTextActive: {
-    color: Colors.white,
+    color: colors.card,
   },
   intervalContainer: {
     flexDirection: 'row',
@@ -493,21 +496,21 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.small,
     borderWidth: 1,
-    borderColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     alignItems: 'center',
   },
   dayButtonActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   dayButtonText: {
     ...Typography.bodySmall,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600',
   },
   dayButtonTextActive: {
-    color: Colors.white,
+    color: colors.card,
   },
   dayOfMonthContainer: {
     flexDirection: 'row',
@@ -522,7 +525,7 @@ const styles = StyleSheet.create({
   },
   helperText: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   endConditionContainer: {
     marginBottom: Spacing.md,
@@ -541,14 +544,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.sm,
     padding: Spacing.md,
-    backgroundColor: Colors.primary + '10',
+    backgroundColor: colors.primary + '10',
     borderRadius: BorderRadius.medium,
     borderWidth: 1,
-    borderColor: Colors.primary + '30',
+    borderColor: colors.primary + '30',
   },
   previewText: {
     ...Typography.bodyMedium,
-    color: Colors.primary,
+    color: colors.primary,
     flex: 1,
   },
   pickerContainer: {
@@ -561,13 +564,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     marginRight: Spacing.sm,
   },
   assigneeChipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   assigneeAvatar: {
     fontSize: 16,
@@ -575,7 +578,7 @@ const styles = StyleSheet.create({
   },
   assigneeChipText: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
   },
   categoryChip: {
     flexDirection: 'row',
@@ -584,8 +587,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.medium,
     borderWidth: 1,
-    borderColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     marginRight: Spacing.sm,
   },
   categoryChipActive: {
@@ -597,7 +600,7 @@ const styles = StyleSheet.create({
   },
   categoryChipText: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
   },
   roomChip: {
     flexDirection: 'row',
@@ -606,13 +609,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.medium,
     borderWidth: 1,
-    borderColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     marginRight: Spacing.sm,
   },
   roomChipActive: {
-    backgroundColor: Colors.secondary + '20',
-    borderColor: Colors.secondary,
+    backgroundColor: colors.secondary + '20',
+    borderColor: colors.secondary,
   },
   roomIcon: {
     fontSize: 16,
@@ -620,6 +623,6 @@ const styles = StyleSheet.create({
   },
   roomChipText: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
   },
 });

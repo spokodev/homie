@@ -94,20 +94,31 @@ export function calculateStreakDays(
   currentStreak: number,
   lastActivityDate?: string
 ): number {
-  if (!shouldMaintainStreak(lastActivityDate)) {
-    return 1; // Reset to 1 if too much time passed
+  if (!lastActivityDate) {
+    return 1; // First activity
   }
 
-  // Check if it's a new day
   const now = new Date();
-  const lastActivity = lastActivityDate ? new Date(lastActivityDate) : new Date();
+  const lastActivity = new Date(lastActivityDate);
 
-  const isNewDay =
-    now.getDate() !== lastActivity.getDate() ||
-    now.getMonth() !== lastActivity.getMonth() ||
-    now.getFullYear() !== lastActivity.getFullYear();
+  // Calculate the difference in days (using UTC to avoid timezone issues)
+  const nowUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const lastUTC = Date.UTC(lastActivity.getFullYear(), lastActivity.getMonth(), lastActivity.getDate());
+  const daysDiff = Math.floor((nowUTC - lastUTC) / (1000 * 60 * 60 * 24));
 
-  return isNewDay ? currentStreak + 1 : currentStreak;
+  if (daysDiff === 0) {
+    // Same day - maintain current streak
+    return currentStreak;
+  } else if (daysDiff === 1) {
+    // Consecutive day - increment streak
+    return currentStreak + 1;
+  } else if (daysDiff <= 2 && !shouldMaintainStreak(lastActivityDate)) {
+    // Within 48 hours but not consecutive days - maintain streak
+    return currentStreak;
+  } else {
+    // More than 2 days or 48 hours - reset streak
+    return 1;
+  }
 }
 
 /**

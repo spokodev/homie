@@ -9,12 +9,16 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useUpdateTask, Task } from '@/hooks/useTasks';
+import { useRooms } from '@/hooks/useRooms';
+import { useHousehold } from '@/contexts/HouseholdContext';
 import { TextInput } from '@/components/Form/TextInput';
 import { TextArea } from '@/components/Form/TextArea';
+import { RoomMultiSelectPicker } from '@/components/Form/RoomMultiSelectPicker';
 import { useToast } from '@/components/Toast';
 import {
   validateTaskTitle,
@@ -25,19 +29,24 @@ import {
 
 export default function EditTaskModal() {
   const router = useRouter();
+  const colors = useThemeColors();
   const params = useLocalSearchParams<{ taskId: string }>();
   const updateTask = useUpdateTask();
   const { showToast } = useToast();
+  const { household } = useHousehold();
+  const { data: rooms = [] } = useRooms(household?.id);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [room, setRoom] = useState('');
+  const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
   const [estimatedMinutes, setEstimatedMinutes] = useState('');
+  const [points, setPoints] = useState('');
   const [errors, setErrors] = useState<{
     title?: string;
     description?: string;
     room?: string;
     estimatedMinutes?: string;
+    points?: string;
   }>({});
 
   // Fetch task details
@@ -58,18 +67,22 @@ export default function EditTaskModal() {
 
   // Populate form when task loads
   useEffect(() => {
-    if (task) {
+    if (task && rooms.length > 0) {
       setTitle(task.title);
       setDescription(task.description || '');
-      setRoom(task.room || '');
-      setEstimatedMinutes(task.estimated_minutes?.toString() || '');
-    }
-  }, [task]);
 
-  const calculatePoints = (minutes: string) => {
-    const mins = parseInt(minutes) || 0;
-    return Math.ceil(mins / 5);
-  };
+      // Find room ID from room name
+      if (task.room) {
+        const matchingRoom = rooms.find(r => r.name === task.room);
+        if (matchingRoom) {
+          setSelectedRoomIds([matchingRoom.id]);
+        }
+      }
+
+      setEstimatedMinutes(task.estimated_minutes?.toString() || '');
+      setPoints(task.points?.toString() || '');
+    }
+  }, [task, rooms]);
 
   const validateForm = () => {
     const newErrors: {
@@ -93,13 +106,7 @@ export default function EditTaskModal() {
       }
     }
 
-    // Validate room (optional)
-    if (room.trim()) {
-      const roomValidation = validateRoomName(room);
-      if (!roomValidation.isValid) {
-        newErrors.room = roomValidation.error;
-      }
-    }
+    // Room validation not needed - using room picker with existing rooms
 
     // Validate estimated minutes (optional)
     if (estimatedMinutes.trim()) {
@@ -118,13 +125,19 @@ export default function EditTaskModal() {
     if (!task) return;
 
     try {
+      // Get room name from selected room ID
+      const selectedRoom = selectedRoomIds.length > 0
+        ? rooms.find(r => r.id === selectedRoomIds[0])
+        : undefined;
+
       await updateTask.mutateAsync({
         id: task.id,
         updates: {
           title: title.trim(),
           description: description.trim() || undefined,
-          room: room.trim() || undefined,
+          room: selectedRoom?.name || undefined, // Store room name, not ID
           estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes) : undefined,
+          points: points ? parseInt(points) : undefined,
         },
       });
 
@@ -135,11 +148,13 @@ export default function EditTaskModal() {
     }
   };
 
+  const styles = createStyles(colors);
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -157,7 +172,7 @@ export default function EditTaskModal() {
           disabled={updateTask.isPending}
         >
           {updateTask.isPending ? (
-            <ActivityIndicator size="small" color={Colors.primary} />
+            <ActivityIndicator size="small" color={colors.primary} />
           ) : (
             <Text style={styles.saveButton}>Save</Text>
           )}
@@ -202,17 +217,14 @@ export default function EditTaskModal() {
         />
 
         {/* Room */}
-        <TextInput
-          label="Room"
-          placeholder="e.g., Kitchen, Living Room"
-          value={room}
-          onChangeText={(text) => {
-            setRoom(text);
-            if (errors.room) setErrors({ ...errors, room: undefined });
-          }}
-          error={errors.room}
-          leftIcon="home-outline"
-          editable={!updateTask.isPending}
+        <RoomMultiSelectPicker
+          label="Room (Optional)"
+          value={selectedRoomIds}
+          onChange={setSelectedRoomIds}
+          householdId={household?.id || ''}
+          placeholder="Select room"
+          multiple={false}
+          disabled={updateTask.isPending}
           containerStyle={styles.section}
         />
 
@@ -227,10 +239,25 @@ export default function EditTaskModal() {
               setErrors({ ...errors, estimatedMinutes: undefined });
           }}
           error={errors.estimatedMinutes}
-          helperText={
-            estimatedMinutes ? `≈ ${calculatePoints(estimatedMinutes)} points` : undefined
-          }
           leftIcon="time-outline"
+          keyboardType="number-pad"
+          editable={!updateTask.isPending}
+          containerStyle={styles.section}
+        />
+
+        {/* Points */}
+        <TextInput
+          label="Points"
+          placeholder="e.g., 10"
+          value={points}
+          onChangeText={(text) => {
+            setPoints(text);
+            if (errors.points)
+              setErrors({ ...errors, points: undefined });
+          }}
+          error={errors.points}
+          helperText="Points awarded when task is completed"
+          leftIcon="star-outline"
           keyboardType="number-pad"
           editable={!updateTask.isPending}
           containerStyle={styles.section}
@@ -240,7 +267,7 @@ export default function EditTaskModal() {
         <View style={styles.infoCard}>
           <Text style={styles.infoIcon}>💡</Text>
           <Text style={styles.infoText}>
-            Points are recalculated automatically based on estimated time
+            Enter points manually to reward task completion
           </Text>
         </View>
       </ScrollView>
@@ -248,10 +275,10 @@ export default function EditTaskModal() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -265,20 +292,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray200,
-    backgroundColor: Colors.white,
+    borderBottomColor: colors.gray200,
+    backgroundColor: colors.card,
   },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   cancelButton: {
     ...Typography.bodyLarge,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   saveButton: {
     ...Typography.bodyLarge,
-    color: Colors.primary,
+    color: colors.primary,
     fontWeight: '600',
   },
   scrollView: {
@@ -292,7 +319,7 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: Colors.secondary + '20',
+    backgroundColor: colors.secondary + '20',
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     marginTop: Spacing.lg,
@@ -303,7 +330,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     flex: 1,
     lineHeight: 20,
   },

@@ -8,12 +8,15 @@ export interface TextAreaProps extends Omit<TextInputProps, 'multiline'> {
   maxLength?: number;
   /** Show character counter */
   showCounter?: boolean;
+  /** Minimum height for text area */
+  minHeight?: number;
 }
 
 export function TextArea({
   numberOfLines = 4,
   maxLength,
   showCounter = false,
+  minHeight = 100, // Default minimum height for consistency
   value,
   helperText,
   ...rest
@@ -38,6 +41,7 @@ export function TextArea({
       textAlignVertical="top"
       maxLength={maxLength}
       helperText={combinedHelperText}
+      inputStyle={{ minHeight }}
     />
   );
 }

@@ -27,6 +27,8 @@ export interface TextInputProps extends Omit<RNTextInputProps, 'style'> {
   onRightIconPress?: () => void;
   /** Container style */
   containerStyle?: any;
+  /** Custom style for the input field itself */
+  inputStyle?: any;
 }
 
 export function TextInput({
@@ -38,6 +40,7 @@ export function TextInput({
   rightIcon,
   onRightIconPress,
   containerStyle,
+  inputStyle,
   editable = true,
   ...rest
 }: TextInputProps) {
@@ -87,6 +90,7 @@ export function TextInput({
             leftIcon && styles.inputWithLeftIcon,
             rightIcon && styles.inputWithRightIcon,
             isDisabled && styles.inputDisabled,
+            inputStyle,
           ]}
           {...rest}
         />

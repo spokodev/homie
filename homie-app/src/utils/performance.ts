@@ -1,19 +1,36 @@
 import * as Sentry from '@sentry/react-native';
 
+// Type for transaction (compatible with both v4 and v5)
+type SentryTransaction = any;
+
 /**
  * Start a performance transaction
+ * Note: Sentry v5 deprecated startTransaction in favor of startSpan
+ * This is wrapped for backwards compatibility
  */
-export function startTransaction(name: string, op: string): Sentry.Transaction | null {
+export function startTransaction(name: string, op: string): SentryTransaction | null {
   if (__DEV__) {
     console.log(`[Performance] Start transaction: ${name} (${op})`);
     return null;
   }
 
   try {
-    return Sentry.startTransaction({
-      name,
-      op,
-    });
+    // Try new API first (v5+), fallback to old API (v4)
+    if (typeof Sentry.startSpan === 'function') {
+      return null; // v5 uses a different pattern, disable for now
+    }
+
+    // Sentry v4 API - startTransaction was removed in v5
+    // @ts-expect-error - startTransaction exists in v4 but not in v5 types
+    if (typeof Sentry.startTransaction === 'function') {
+      // @ts-expect-error - startTransaction exists in v4 but not in v5 types
+      return Sentry.startTransaction({
+        name,
+        op,
+      });
+    }
+
+    return null;
   } catch (error) {
     console.error('[Performance] Failed to start transaction:', error);
     return null;
@@ -23,11 +40,13 @@ export function startTransaction(name: string, op: string): Sentry.Transaction |
 /**
  * Finish a performance transaction
  */
-export function finishTransaction(transaction: Sentry.Transaction | null) {
+export function finishTransaction(transaction: SentryTransaction | null) {
   if (!transaction) return;
 
   try {
-    transaction.finish();
+    if (typeof transaction.finish === 'function') {
+      transaction.finish();
+    }
   } catch (error) {
     console.error('[Performance] Failed to finish transaction:', error);
   }
@@ -37,17 +56,20 @@ export function finishTransaction(transaction: Sentry.Transaction | null) {
  * Create a performance span within a transaction
  */
 export function startSpan(
-  transaction: Sentry.Transaction | null,
+  transaction: SentryTransaction | null,
   op: string,
   description: string
-): Sentry.Span | null {
+): any | null {
   if (!transaction) return null;
 
   try {
-    return transaction.startChild({
-      op,
-      description,
-    });
+    if (typeof transaction.startChild === 'function') {
+      return transaction.startChild({
+        op,
+        description,
+      });
+    }
+    return null;
   } catch (error) {
     console.error('[Performance] Failed to start span:', error);
     return null;
@@ -57,11 +79,13 @@ export function startSpan(
 /**
  * Finish a performance span
  */
-export function finishSpan(span: Sentry.Span | null) {
+export function finishSpan(span: any | null) {
   if (!span) return;
 
   try {
-    span.finish();
+    if (typeof span.finish === 'function') {
+      span.finish();
+    }
   } catch (error) {
     console.error('[Performance] Failed to finish span:', error);
   }
@@ -110,8 +134,12 @@ export function trackAPIRequest(endpoint: string, method: string = 'GET') {
 
   return {
     finish: (status?: number) => {
-      if (transaction && status) {
-        transaction.setHttpStatus(status);
+      if (transaction && status && typeof transaction.setHttpStatus === 'function') {
+        try {
+          transaction.setHttpStatus(status);
+        } catch (e) {
+          // Ignore if method doesn't exist
+        }
       }
       finishTransaction(transaction);
     },

@@ -10,7 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useToast } from '@/components/Toast';
 import { ConfirmDialog } from '@/components/Modal/ConfirmDialog';
 import { useHousehold } from '@/contexts/HouseholdContext';
@@ -19,10 +20,10 @@ import { useDeleteRoom } from '@/hooks/useRooms';
 import { usePremiumStore } from '@/stores/premium.store';
 import { logError } from '@/utils/errorHandling';
 
-const NOTE_COLORS = ['#FFD93D', '#FF6B6B', '#4ECDC4', '#95E1D3', '#FFA502', '#C7CEEA'];
 
 export default function RoomDetailsScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const params = useLocalSearchParams<{ roomId: string; roomName: string }>();
   const { household, member } = useHousehold();
   const { showToast } = useToast();
@@ -99,19 +100,21 @@ export default function RoomDetailsScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={48} color={Colors.error} />
+          <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
           <Text style={styles.errorText}>Failed to load notes</Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={Colors.text} />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.title} numberOfLines={1}>
           {params.roomName}
@@ -120,13 +123,13 @@ export default function RoomDetailsScreen() {
           onPress={() => setShowDeleteRoomDialog(true)}
           style={styles.deleteButton}
         >
-          <Ionicons name="trash-outline" size={20} color={Colors.error} />
+          <Ionicons name="trash-outline" size={20} color={colors.error} />
         </TouchableOpacity>
       </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Loading notes...</Text>
         </View>
       ) : (
@@ -135,7 +138,7 @@ export default function RoomDetailsScreen() {
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {notes.length === 0 ? (
               <View style={styles.emptyState}>
-                <Ionicons name="document-text-outline" size={64} color={Colors.gray500} />
+                <Ionicons name="document-text-outline" size={64} color={colors.gray500} />
                 <Text style={styles.emptyStateTitle}>No notes yet</Text>
                 <Text style={styles.emptyStateText}>
                   Add sticky notes to leave reminders for this room
@@ -156,7 +159,7 @@ export default function RoomDetailsScreen() {
                       <Ionicons
                         name={note.is_pinned ? 'pin' : 'pin-outline'}
                         size={20}
-                        color={Colors.text}
+                        color={colors.text}
                       />
                     </TouchableOpacity>
 
@@ -166,7 +169,7 @@ export default function RoomDetailsScreen() {
                         style={styles.noteDeleteButton}
                         onPress={() => setNoteToDelete(note.id)}
                       >
-                        <Ionicons name="close" size={20} color={Colors.text} />
+                        <Ionicons name="close" size={20} color={colors.text} />
                       </TouchableOpacity>
                     )}
 
@@ -206,7 +209,7 @@ export default function RoomDetailsScreen() {
               style={[styles.addButton, !canAddMoreNotes && styles.addButtonDisabled]}
               onPress={handleAddNote}
             >
-              <Ionicons name="add" size={24} color={Colors.white} />
+              <Ionicons name="add" size={24} color={colors.card} />
               <Text style={styles.addButtonText}>Add Note</Text>
             </TouchableOpacity>
           </View>
@@ -238,19 +241,19 @@ export default function RoomDetailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Spacing.lg,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
+    borderBottomColor: colors.border,
   },
   backButton: {
     width: 40,
@@ -260,7 +263,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
     flex: 1,
     textAlign: 'center',
     marginHorizontal: Spacing.sm,
@@ -278,7 +281,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: Spacing.md,
   },
   errorContainer: {
@@ -289,7 +292,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...Typography.h4,
-    color: Colors.error,
+    color: colors.error,
     marginTop: Spacing.md,
   },
   content: {
@@ -304,12 +307,12 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
     marginTop: Spacing.md,
   },
   emptyStateText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: Spacing.xs,
     textAlign: 'center',
   },
@@ -355,7 +358,7 @@ const styles = StyleSheet.create({
   },
   noteContent: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     marginTop: Spacing.xl,
     marginBottom: Spacing.md,
     flex: 1,
@@ -367,46 +370,46 @@ const styles = StyleSheet.create({
   },
   noteAuthor: {
     ...Typography.labelSmall,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600',
   },
   noteExpiry: {
     ...Typography.labelSmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   limitInfo: {
     padding: Spacing.md,
-    backgroundColor: Colors.primary + '10',
+    backgroundColor: colors.primary + '10',
     borderRadius: BorderRadius.medium,
     marginTop: Spacing.lg,
   },
   limitText: {
     ...Typography.bodySmall,
-    color: Colors.text,
+    color: colors.text,
     textAlign: 'center',
   },
   footer: {
     padding: Spacing.lg,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray300,
+    borderTopColor: colors.border,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.full,
     gap: Spacing.xs,
   },
   addButtonDisabled: {
-    backgroundColor: Colors.gray500,
+    backgroundColor: colors.gray500,
     opacity: 0.5,
   },
   addButtonText: {
     ...Typography.button,
-    color: Colors.white,
+    color: colors.card,
   },
 });

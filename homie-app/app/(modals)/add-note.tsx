@@ -10,7 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { TextArea } from '@/components/Form/TextArea';
 import { Button } from '@/components/Button';
 import { useToast } from '@/components/Toast';
@@ -29,6 +30,7 @@ const NOTE_COLORS = [
 
 export default function AddNoteScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const params = useLocalSearchParams<{ roomId: string; roomName: string }>();
   const { member } = useHousehold();
   const { showToast } = useToast();
@@ -82,12 +84,14 @@ export default function AddNoteScreen() {
     }
   };
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color={Colors.text} />
+          <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.title}>Add Note</Text>
         <View style={styles.closeButton} />
@@ -96,7 +100,7 @@ export default function AddNoteScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Room Name */}
         <View style={styles.roomBadge}>
-          <Ionicons name="location-outline" size={16} color={Colors.textSecondary} />
+          <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
           <Text style={styles.roomText}>{params.roomName}</Text>
         </View>
 
@@ -148,7 +152,7 @@ export default function AddNoteScreen() {
                 onPress={() => setSelectedColor(colorOption.color)}
               >
                 {selectedColor === colorOption.color && (
-                  <Ionicons name="checkmark" size={24} color={Colors.text} />
+                  <Ionicons name="checkmark" size={24} color={colors.text} />
                 )}
               </TouchableOpacity>
             ))}
@@ -157,7 +161,7 @@ export default function AddNoteScreen() {
 
         {/* Tips */}
         <View style={styles.tipsBox}>
-          <Ionicons name="bulb-outline" size={20} color={Colors.accent} />
+          <Ionicons name="bulb-outline" size={20} color={colors.accent} />
           <View style={styles.tipsContent}>
             <Text style={styles.tipsTitle}>Tips:</Text>
             <Text style={styles.tipsText}>
@@ -177,9 +181,9 @@ export default function AddNoteScreen() {
           disabled={isSubmitting || !noteContent.trim()}
           leftIcon={
             isSubmitting ? (
-              <ActivityIndicator size="small" color={Colors.white} />
+              <ActivityIndicator size="small" color={colors.card} />
             ) : (
-              <Ionicons name="add" size={20} color={Colors.white} />
+              <Ionicons name="add" size={20} color={colors.card} />
             )
           }
         />
@@ -188,19 +192,19 @@ export default function AddNoteScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Spacing.lg,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
+    borderBottomColor: colors.border,
   },
   closeButton: {
     width: 40,
@@ -210,7 +214,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   content: {
     flex: 1,
@@ -220,7 +224,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: Colors.gray100,
+    backgroundColor: colors.gray100,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
@@ -229,7 +233,7 @@ const styles = StyleSheet.create({
   },
   roomText: {
     ...Typography.labelMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   previewSection: {
     marginBottom: Spacing.xl,
@@ -239,7 +243,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...Typography.labelLarge,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.md,
   },
   notePreview: {
@@ -254,7 +258,7 @@ const styles = StyleSheet.create({
   },
   notePreviewText: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     flex: 1,
     marginTop: Spacing.sm,
   },
@@ -266,7 +270,7 @@ const styles = StyleSheet.create({
   },
   notePreviewAuthor: {
     ...Typography.labelSmall,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600',
   },
   colorGrid: {
@@ -289,11 +293,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   colorButtonActive: {
-    borderColor: Colors.text,
+    borderColor: colors.text,
   },
   tipsBox: {
     flexDirection: 'row',
-    backgroundColor: Colors.accent + '10',
+    backgroundColor: colors.accent + '10',
     padding: Spacing.md,
     borderRadius: BorderRadius.medium,
     gap: Spacing.sm,
@@ -304,18 +308,18 @@ const styles = StyleSheet.create({
   },
   tipsTitle: {
     ...Typography.labelLarge,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.xs,
   },
   tipsText: {
     ...Typography.bodySmall,
-    color: Colors.text,
+    color: colors.text,
     lineHeight: 18,
   },
   footer: {
     padding: Spacing.lg,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray300,
+    borderTopColor: colors.border,
   },
 });

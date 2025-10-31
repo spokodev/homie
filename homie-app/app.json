@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "HomieLife",
-    "slug": "homielife",
+    "slug": "homie",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -44,7 +44,8 @@
       "expo-router",
       "expo-font",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-localization"
     ],
     "extra": {
       "router": {
@@ -54,7 +55,7 @@
         "projectId": "c4165c7a-e064-4fcb-91e5-5e95bcff13d9"
       }
     },
-    "owner": "spokodev",
+    "owner": "toyarik",
     "updates": {
       "fallbackToCacheTimeout": 0
     },

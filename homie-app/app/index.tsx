@@ -4,10 +4,8 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
-  Dimensions,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Animated, {
   useSharedValue,
@@ -21,8 +19,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/theme';
 import { APP_CONFIG } from '@/constants';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const router = useRouter();

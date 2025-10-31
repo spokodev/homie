@@ -11,7 +11,8 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useMembers, useDeleteMember } from '@/hooks/useMembers';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useToast } from '@/components/Toast';
@@ -19,6 +20,7 @@ import { calculateLevel, getLevelTitle } from '@/utils/gamification';
 
 export default function HouseholdMembersScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { household, member: currentMember } = useHousehold();
   const { data: members = [], isLoading, refetch } = useMembers(household?.id);
   const deleteMember = useDeleteMember();
@@ -31,6 +33,14 @@ export default function HouseholdMembersScreen() {
       return;
     }
     router.push('/(modals)/add-member');
+  };
+
+  const handleManageInvitations = () => {
+    if (currentMember?.role !== 'admin') {
+      showToast('Only admins can manage invitations', 'error');
+      return;
+    }
+    router.push('/(modals)/manage-invitations');
   };
 
   const handleDeleteMember = (memberId: string, memberName: string) => {
@@ -90,7 +100,7 @@ export default function HouseholdMembersScreen() {
                 {isCurrentUser && ' (You)'}
               </Text>
               {member.role === 'admin' && (
-                <Ionicons name="shield-checkmark" size={16} color={Colors.primary} />
+                <Ionicons name="shield-checkmark" size={16} color={colors.primary} />
               )}
               {member.type === 'pet' && (
                 <Text style={styles.petBadge}>🐾</Text>
@@ -108,12 +118,12 @@ export default function HouseholdMembersScreen() {
         {/* Stats */}
         <View style={styles.memberStats}>
           <View style={styles.statItem}>
-            <Ionicons name="star" size={16} color={Colors.accent} />
+            <Ionicons name="star" size={16} color={colors.accent} />
             <Text style={styles.statValue}>{member.points}</Text>
           </View>
           {member.streak_days > 0 && (
             <View style={styles.statItem}>
-              <Ionicons name="flame" size={16} color={Colors.warning} />
+              <Ionicons name="flame" size={16} color={colors.warning} />
               <Text style={styles.statValue}>{member.streak_days}</Text>
             </View>
           )}
@@ -127,9 +137,9 @@ export default function HouseholdMembersScreen() {
             disabled={isDeleting}
           >
             {isDeleting ? (
-              <ActivityIndicator size="small" color={Colors.error} />
+              <ActivityIndicator size="small" color={colors.error} />
             ) : (
-              <Ionicons name="trash-outline" size={20} color={Colors.error} />
+              <Ionicons name="trash-outline" size={20} color={colors.error} />
             )}
           </TouchableOpacity>
         )}
@@ -141,7 +151,7 @@ export default function HouseholdMembersScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -150,16 +160,18 @@ export default function HouseholdMembersScreen() {
   const humanMembers = members.filter((m) => m.type === 'human');
   const pets = members.filter((m) => m.type === 'pet');
 
+  const styles = createStyles(colors);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color={Colors.text} />
+          <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Family Members</Text>
         <TouchableOpacity onPress={handleAddMember}>
-          <Ionicons name="add-circle" size={24} color={Colors.primary} />
+          <Ionicons name="add-circle" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -200,18 +212,25 @@ export default function HouseholdMembersScreen() {
           </View>
         )}
 
-        {/* Add Member CTA */}
+        {/* Admin Actions */}
         {currentMember?.role === 'admin' && members.length > 0 && (
-          <TouchableOpacity style={styles.addButton} onPress={handleAddMember}>
-            <Ionicons name="add-circle-outline" size={24} color={Colors.primary} />
-            <Text style={styles.addButtonText}>Add Member or Pet</Text>
-          </TouchableOpacity>
+          <View style={styles.adminActions}>
+            <TouchableOpacity style={styles.actionButton} onPress={handleAddMember}>
+              <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+              <Text style={styles.actionButtonText}>Add Member</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionButton} onPress={handleManageInvitations}>
+              <Ionicons name="mail-outline" size={24} color={colors.primary} />
+              <Text style={styles.actionButtonText}>Invitations</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Admin Info */}
         {currentMember?.role !== 'admin' && (
           <View style={styles.infoCard}>
-            <Ionicons name="information-circle" size={20} color={Colors.secondary} />
+            <Ionicons name="information-circle" size={20} color={colors.secondary} />
             <Text style={styles.infoText}>
               Only household admins can add or remove members.
             </Text>
@@ -222,10 +241,10 @@ export default function HouseholdMembersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -239,12 +258,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderBottomColor: colors.gray300,
+    backgroundColor: colors.card,
   },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
   },
   scrollView: {
     flex: 1,
@@ -254,7 +273,7 @@ const styles = StyleSheet.create({
   },
   householdCard: {
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.large,
     padding: Spacing.xl,
     marginBottom: Spacing.xl,
@@ -266,25 +285,25 @@ const styles = StyleSheet.create({
   },
   householdName: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.xs,
   },
   householdSubtext: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   section: {
     marginBottom: Spacing.xl,
   },
   sectionTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.md,
   },
   memberCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
@@ -309,12 +328,12 @@ const styles = StyleSheet.create({
   },
   memberName: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600',
   },
   levelText: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   petBadge: {
@@ -322,7 +341,7 @@ const styles = StyleSheet.create({
   },
   petText: {
     ...Typography.bodySmall,
-    color: Colors.secondary,
+    color: colors.secondary,
     marginTop: 2,
   },
   memberStats: {
@@ -337,28 +356,32 @@ const styles = StyleSheet.create({
   },
   statValue: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     fontWeight: '600',
   },
   deleteButton: {
     padding: Spacing.xs,
   },
-  addButton: {
+  adminActions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginTop: Spacing.lg,
+  },
+  actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: BorderRadius.medium,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    borderStyle: 'dashed',
-    padding: Spacing.lg,
-    marginTop: Spacing.md,
-    gap: Spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    padding: Spacing.md,
+    gap: Spacing.xs,
   },
-  addButtonText: {
-    ...Typography.bodyLarge,
-    color: Colors.primary,
+  actionButtonText: {
+    ...Typography.bodyMedium,
+    color: colors.primary,
     fontWeight: '600',
   },
   emptyState: {
@@ -371,17 +394,17 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text,
     marginBottom: Spacing.sm,
   },
   emptyText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: Colors.secondary + '15',
+    backgroundColor: colors.secondary + '15',
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     marginTop: Spacing.xl,
@@ -389,7 +412,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text,
     flex: 1,
     lineHeight: 20,
   },

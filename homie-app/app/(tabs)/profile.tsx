@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Scr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useMembers } from '@/hooks/useMembers';
@@ -14,6 +15,7 @@ import { usePremiumStore } from '@/stores/premium.store';
 import { useCaptainStats } from '@/hooks/useCaptain';
 
 export default function ProfileScreen() {
+  const colors = useThemeColors();
   const { user, signOut } = useAuth();
   const router = useRouter();
   const { household, member } = useHousehold();
@@ -21,6 +23,8 @@ export default function ProfileScreen() {
   const { data: allTasks = [] } = useTasks(household?.id);
   const [loading, setLoading] = useState(false);
   const isPremium = usePremiumStore((state) => state.isPremium);
+
+  const styles = createStyles(colors);
 
   // Badges
   const { earned, locked } = useGroupedBadges(member?.id, isPremium);
@@ -81,13 +85,13 @@ export default function ProfileScreen() {
           </View>
           <Text style={styles.name}>{member?.name || 'Loading...'}</Text>
           <View style={[styles.levelBadge, { backgroundColor: levelColor }]}>
-            <Ionicons name="star" size={14} color={Colors.white} />
+            <Ionicons name="star" size={14} color={colors.text.inverse} />
             <Text style={styles.levelText}>Level {level}</Text>
           </View>
           <Text style={styles.levelTitle}>{levelTitle}</Text>
           {member?.role === 'admin' && (
             <View style={styles.adminBadge}>
-              <Ionicons name="shield-checkmark" size={14} color={Colors.white} />
+              <Ionicons name="shield-checkmark" size={14} color={colors.text.inverse} />
               <Text style={styles.adminText}>Admin</Text>
             </View>
           )}
@@ -98,29 +102,29 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>My Stats</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
-              <Ionicons name="star" size={24} color={Colors.accent} />
+              <Ionicons name="star" size={24} color={colors.accent.default} />
               <Text style={styles.statValue}>{member?.points || 0}</Text>
               <Text style={styles.statLabel}>Points</Text>
             </View>
             <View style={styles.statCard}>
-              <Ionicons name="checkmark-circle" size={24} color={Colors.success} />
+              <Ionicons name="checkmark-circle" size={24} color={colors.success.default} />
               <Text style={styles.statValue}>{tasksCompleted}</Text>
               <Text style={styles.statLabel}>Tasks Done</Text>
             </View>
             <View style={styles.statCard}>
-              <Ionicons name="flame" size={24} color={Colors.warning} />
+              <Ionicons name="flame" size={24} color={colors.warning.default} />
               <Text style={styles.statValue}>{member?.streak_days || 0}</Text>
               <Text style={styles.statLabel}>Streak</Text>
             </View>
           </View>
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
-              <Ionicons name="trophy" size={24} color={Colors.primary} />
+              <Ionicons name="trophy" size={24} color={colors.primary.default} />
               <Text style={styles.statValue}>#{rank || '-'}</Text>
               <Text style={styles.statLabel}>Rank</Text>
             </View>
             <View style={styles.statCard}>
-              <Ionicons name="home" size={24} color={Colors.secondary} />
+              <Ionicons name="home" size={24} color={colors.secondary.default} />
               <Text style={styles.statValue}>{household?.icon || '🏠'}</Text>
               <Text style={styles.statLabel}>{household?.name || 'Loading...'}</Text>
             </View>
@@ -132,17 +136,17 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Captain Stats</Text>
-              <Ionicons name="crown" size={20} color={Colors.accent} />
+              <Ionicons name="ribbon" size={20} color={colors.accent.default} />
             </View>
             <View style={styles.captainStatsCard}>
               <View style={styles.captainStatItem}>
-                <Ionicons name="shield" size={24} color={Colors.primary} />
+                <Ionicons name="shield" size={24} color={colors.primary.default} />
                 <Text style={styles.captainStatValue}>{captainStats.times_captain}</Text>
                 <Text style={styles.captainStatLabel}>Times Captain</Text>
               </View>
               {captainStats.average_rating && (
                 <View style={styles.captainStatItem}>
-                  <Ionicons name="star" size={24} color={Colors.accent} />
+                  <Ionicons name="star" size={24} color={colors.accent.default} />
                   <Text style={styles.captainStatValue}>
                     {captainStats.average_rating.toFixed(1)}
                   </Text>
@@ -187,7 +191,7 @@ export default function ProfileScreen() {
                       <Ionicons
                         name="lock-closed"
                         size={16}
-                        color={Colors.text}
+                        color={colors.text.primary}
                         style={styles.lockIcon}
                       />
                     </View>
@@ -202,7 +206,7 @@ export default function ProfileScreen() {
 
           {earnedCount === 0 && (
             <View style={styles.noBadges}>
-              <Ionicons name="trophy-outline" size={48} color={Colors.textSecondary} />
+              <Ionicons name="trophy-outline" size={48} color={colors.text.secondary} />
               <Text style={styles.noBadgesText}>No badges earned yet</Text>
               <Text style={styles.noBadgesHint}>Complete tasks to earn your first badge!</Text>
             </View>
@@ -216,40 +220,40 @@ export default function ProfileScreen() {
             onPress={() => router.push('/(modals)/edit-profile')}
           >
             <View style={styles.menuItemLeft}>
-              <Ionicons name="person-outline" size={20} color={Colors.primary} />
+              <Ionicons name="person-outline" size={20} color={colors.primary.default} />
               <Text style={styles.menuItemText}>Edit Profile</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
+            <Ionicons name="chevron-forward" size={20} color={colors.border.default} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push('/(modals)/household-members')}
           >
             <View style={styles.menuItemLeft}>
-              <Ionicons name="people-outline" size={20} color={Colors.primary} />
+              <Ionicons name="people-outline" size={20} color={colors.primary.default} />
               <Text style={styles.menuItemText}>Family Members</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
+            <Ionicons name="chevron-forward" size={20} color={colors.border.default} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push('/(modals)/household-settings')}
           >
             <View style={styles.menuItemLeft}>
-              <Ionicons name="home-outline" size={20} color={Colors.primary} />
+              <Ionicons name="home-outline" size={20} color={colors.primary.default} />
               <Text style={styles.menuItemText}>Household Settings</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
+            <Ionicons name="chevron-forward" size={20} color={colors.border.default} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push('/(modals)/settings')}
           >
             <View style={styles.menuItemLeft}>
-              <Ionicons name="settings-outline" size={20} color={Colors.primary} />
+              <Ionicons name="settings-outline" size={20} color={colors.primary.default} />
               <Text style={styles.menuItemText}>Settings</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={Colors.gray400} />
+            <Ionicons name="chevron-forward" size={20} color={colors.border.default} />
           </TouchableOpacity>
         </View>
 
@@ -260,7 +264,7 @@ export default function ProfileScreen() {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color={Colors.white} />
+            <ActivityIndicator color={colors.text.inverse} />
           ) : (
             <Text style={styles.logoutButtonText}>Logout</Text>
           )}
@@ -270,10 +274,10 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background.primary,
   },
   scrollContent: {
     padding: Spacing.lg,
@@ -283,10 +287,10 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h1,
-    color: Colors.text,
+    color: colors.text.primary,
   },
   card: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.surface.primary,
     borderRadius: BorderRadius.large,
     padding: Spacing.xl,
     alignItems: 'center',
@@ -301,7 +305,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: Colors.gray100,
+    backgroundColor: colors.surface.secondary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.md,
@@ -311,7 +315,7 @@ const styles = StyleSheet.create({
   },
   name: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text.primary,
     marginBottom: Spacing.xs,
   },
   levelBadge: {
@@ -325,18 +329,18 @@ const styles = StyleSheet.create({
   },
   levelText: {
     ...Typography.labelMedium,
-    color: Colors.white,
+    color: colors.surface.primary,
     fontWeight: '600',
   },
   levelTitle: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     marginBottom: Spacing.xs,
   },
   adminBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary.default,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
     borderRadius: BorderRadius.small,
@@ -344,7 +348,7 @@ const styles = StyleSheet.create({
   },
   adminText: {
     ...Typography.labelSmall,
-    color: Colors.white,
+    color: colors.surface.primary,
     fontWeight: '600',
   },
   section: {
@@ -352,7 +356,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text.primary,
     marginBottom: Spacing.md,
   },
   statsGrid: {
@@ -362,7 +366,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.surface.primary,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     alignItems: 'center',
@@ -374,12 +378,12 @@ const styles = StyleSheet.create({
   },
   statValue: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text.primary,
     marginVertical: Spacing.xs,
   },
   statLabel: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     textAlign: 'center',
   },
   sectionHeader: {
@@ -389,7 +393,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   captainStatsCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.surface.primary,
     borderRadius: BorderRadius.medium,
     padding: Spacing.lg,
     flexDirection: 'row',
@@ -402,19 +406,19 @@ const styles = StyleSheet.create({
   },
   captainStatValue: {
     ...Typography.h2,
-    color: Colors.text,
+    color: colors.text.primary,
     fontWeight: '700',
   },
   captainStatLabel: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     textAlign: 'center',
   },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.surface.primary,
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
@@ -431,10 +435,10 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text.primary,
   },
   logoutButton: {
-    backgroundColor: Colors.error,
+    backgroundColor: colors.error.default,
     borderRadius: BorderRadius.full,
     paddingVertical: Spacing.md,
     alignItems: 'center',
@@ -443,17 +447,17 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     ...Typography.button,
-    color: Colors.white,
+    color: colors.surface.primary,
   },
   // Badges styles
   badgeCount: {
     ...Typography.bodyLarge,
-    color: Colors.primary,
+    color: colors.primary.default,
     fontWeight: '600',
   },
   badgesSubtitle: {
     ...Typography.labelMedium,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     marginBottom: Spacing.sm,
     marginTop: Spacing.md,
   },
@@ -477,14 +481,14 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   badgeEarned: {
-    backgroundColor: Colors.accent + '20',
+    backgroundColor: colors.accent.default + '20',
     borderWidth: 2,
-    borderColor: Colors.accent,
+    borderColor: colors.accent.default,
   },
   badgeLocked: {
-    backgroundColor: Colors.gray300,
+    backgroundColor: colors.surface.tertiary,
     borderWidth: 2,
-    borderColor: Colors.text,
+    borderColor: colors.text.primary,
     opacity: 0.5,
   },
   badgeIconLarge: {
@@ -497,18 +501,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 4,
     right: 4,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.surface.primary,
     borderRadius: 8,
     padding: 2,
   },
   badgeName: {
     ...Typography.bodySmall,
-    color: Colors.text,
+    color: colors.text.primary,
     textAlign: 'center',
     fontSize: 11,
   },
   badgeNameGray: {
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   noBadges: {
     alignItems: 'center',
@@ -516,13 +520,13 @@ const styles = StyleSheet.create({
   },
   noBadgesText: {
     ...Typography.bodyLarge,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     marginTop: Spacing.md,
     marginBottom: Spacing.xs,
   },
   noBadgesHint: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     textAlign: 'center',
   },
 });

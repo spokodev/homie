@@ -14,6 +14,13 @@ export interface Message {
   type: 'text' | 'image' | 'system';
   image_url?: string;
   created_at: string;
+  edited_at?: string;
+  reply_to_id?: string;
+  reply_to?: {
+    id: string;
+    content: string;
+    member_name: string;
+  };
 }
 
 export interface SendMessageInput {
@@ -22,6 +29,8 @@ export interface SendMessageInput {
   content: string;
   type?: 'text' | 'image' | 'system';
   image_url?: string;
+  channel_id?: string;
+  reply_to_id?: string;
 }
 
 const QUERY_KEY = 'messages';
@@ -29,18 +38,19 @@ const MESSAGES_LIMIT = 100;
 
 /**
  * Fetch messages for a household with real-time updates
+ * If channelId is provided, only fetch messages for that channel
  */
-export function useMessages(householdId?: string) {
+export function useMessages(householdId?: string, channelId?: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   const query = useQuery<Message[]>({
-    queryKey: [QUERY_KEY, householdId],
+    queryKey: [QUERY_KEY, householdId, channelId],
     queryFn: async () => {
       if (!householdId) return [];
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('messages')
         .select(`
           *,
@@ -50,7 +60,17 @@ export function useMessages(householdId?: string) {
             avatar
           )
         `)
-        .eq('household_id', householdId)
+        .eq('household_id', householdId);
+
+      // Filter by channel if provided
+      if (channelId) {
+        query = query.eq('channel_id', channelId);
+      } else {
+        // If no channel specified, get messages without channel (legacy household-wide)
+        query = query.is('channel_id', null);
+      }
+
+      const { data, error } = await query
         .order('created_at', { ascending: false })
         .limit(MESSAGES_LIMIT);
 
@@ -76,16 +96,22 @@ export function useMessages(householdId?: string) {
       supabase.removeChannel(channelRef.current);
     }
 
+    // Build filter based on channel
+    let filter = `household_id=eq.${householdId}`;
+    if (channelId) {
+      filter += `,channel_id=eq.${channelId}`;
+    }
+
     // Create new subscription
     const channel = supabase
-      .channel(`messages:${householdId}`)
+      .channel(`messages:${householdId}${channelId ? `:${channelId}` : ''}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'messages',
-          filter: `household_id=eq.${householdId}`,
+          filter,
         },
         async (payload) => {
           // Fetch the full message with member details
@@ -111,7 +137,7 @@ export function useMessages(householdId?: string) {
 
             // Optimistically add to cache
             queryClient.setQueryData<Message[]>(
-              [QUERY_KEY, householdId],
+              [QUERY_KEY, householdId, channelId],
               (old) => {
                 if (!old) return [transformedMessage];
                 // Avoid duplicates
@@ -135,7 +161,7 @@ export function useMessages(householdId?: string) {
         channelRef.current = null;
       }
     };
-  }, [householdId, user, queryClient]);
+  }, [householdId, channelId, user, queryClient]);
 
   return query;
 }
@@ -156,6 +182,8 @@ export function useSendMessage() {
           content: input.content,
           type: input.type || 'text',
           image_url: input.image_url,
+          channel_id: input.channel_id || null,
+          reply_to_id: input.reply_to_id || null,
         })
         .select(`
           *,
@@ -176,30 +204,32 @@ export function useSendMessage() {
         member_avatar: data.member?.avatar,
       } as Message;
     },
-    onMutate: async (input) => {
+    onMutate: async (input: any) => {
       // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: [QUERY_KEY, input.household_id] });
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEY, input.household_id, input.channel_id] });
 
       // Snapshot previous value
       const previousMessages = queryClient.getQueryData<Message[]>([
         QUERY_KEY,
         input.household_id,
+        input.channel_id,
       ]);
 
-      // Optimistically update with temporary message
+      // Optimistically update with temporary message including member details
       const tempMessage: Message = {
         id: `temp-${Date.now()}`,
         household_id: input.household_id,
         member_id: input.member_id,
+        member_name: input.member_name,
+        member_avatar: input.member_avatar,
         content: input.content,
         type: input.type || 'text',
         image_url: input.image_url,
         created_at: new Date().toISOString(),
-        // Member details will be populated by real-time subscription
       };
 
       queryClient.setQueryData<Message[]>(
-        [QUERY_KEY, input.household_id],
+        [QUERY_KEY, input.household_id, input.channel_id],
         (old) => {
           if (!old) return [tempMessage];
           return [...old, tempMessage];
@@ -212,7 +242,7 @@ export function useSendMessage() {
       // Rollback on error
       if (context?.previousMessages) {
         queryClient.setQueryData(
-          [QUERY_KEY, input.household_id],
+          [QUERY_KEY, input.household_id, input.channel_id],
           context.previousMessages
         );
       }
@@ -220,7 +250,7 @@ export function useSendMessage() {
     onSuccess: (data, input) => {
       // Replace temp message with real one
       queryClient.setQueryData<Message[]>(
-        [QUERY_KEY, input.household_id],
+        [QUERY_KEY, input.household_id, input.channel_id],
         (old) => {
           if (!old) return [data];
 
@@ -246,24 +276,64 @@ export function useDeleteMessage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ messageId, householdId }: { messageId: string; householdId: string }) => {
+    mutationFn: async ({
+      messageId,
+      householdId,
+      channelId,
+    }: {
+      messageId: string;
+      householdId: string;
+      channelId?: string;
+    }) => {
       const { error } = await supabase
         .from('messages')
         .delete()
         .eq('id', messageId);
 
       if (error) throw error;
-      return { messageId, householdId };
+      return { messageId, householdId, channelId };
     },
     onSuccess: (result) => {
-      // Remove message from cache
-      queryClient.setQueryData<Message[]>(
-        [QUERY_KEY, result.householdId],
-        (old) => {
-          if (!old) return [];
-          return old.filter((msg) => msg.id !== result.messageId);
-        }
-      );
+      // Invalidate all message queries for this household
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, result.householdId] });
+    },
+  });
+}
+
+/**
+ * Edit a message
+ */
+export function useEditMessage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      messageId,
+      content,
+      householdId,
+      channelId,
+    }: {
+      messageId: string;
+      content: string;
+      householdId: string;
+      channelId?: string;
+    }) => {
+      const { data, error } = await supabase
+        .from('messages')
+        .update({
+          content,
+          edited_at: new Date().toISOString(),
+        })
+        .eq('id', messageId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { data, householdId, channelId };
+    },
+    onSuccess: (result) => {
+      // Invalidate all message queries for this household
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, result.householdId] });
     },
   });
 }

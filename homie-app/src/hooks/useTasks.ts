@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { calculateLevel } from '@/utils/gamification';
 import { trackTaskEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
 
 export interface Task {
@@ -29,12 +28,20 @@ export interface CreateTaskInput {
   title: string;
   description?: string;
   room?: string;
-  category?: string;
+  category?: string; // Legacy - for old code compatibility
+  category_id?: string; // New - FK to task_categories table
   assignee_id?: string;
   due_date?: string;
   estimated_minutes?: number;
+  points?: number; // Manual points entry
   household_id: string;
   created_by_member_id: string; // Member ID who creates the task
+  has_subtasks?: boolean;
+  subtasks?: Array<{
+    title: string;
+    points: number;
+    sort_order: number;
+  }>;
 }
 
 export interface UpdateTaskInput {
@@ -45,6 +52,7 @@ export interface UpdateTaskInput {
   assignee_id?: string;
   due_date?: string;
   estimated_minutes?: number;
+  points?: number; // Manual points entry
   status?: 'pending' | 'in_progress' | 'completed';
   actual_minutes?: number;
 }
@@ -143,35 +151,66 @@ export function useCreateTask() {
 
   return useMutation({
     mutationFn: async (input: CreateTaskInput) => {
-      // Calculate points: 5 minutes = 1 point
-      const points = input.estimated_minutes
-        ? Math.ceil(input.estimated_minutes / 5)
-        : 10;
+      // Use manual points, or calculate from subtasks, or default to 10
+      let points = input.points || 10;
 
-      const { data, error } = await supabase
+      if (input.has_subtasks && input.subtasks && input.subtasks.length > 0) {
+        // If has subtasks, sum their points
+        points = input.subtasks.reduce((sum, subtask) => sum + subtask.points, 0);
+      }
+
+      const { data: task, error } = await supabase
         .from('tasks')
         .insert({
           household_id: input.household_id,
           title: input.title,
           description: input.description,
-          category: input.category,
+          category: input.category, // Legacy field
+          category_id: input.category_id, // New FK field
           room: input.room, // Store room as text field, not FK
           assignee_id: input.assignee_id,
           due_date: input.due_date,
-          estimated_minutes: input.estimated_minutes,
+          estimated_minutes: input.has_subtasks ? undefined : input.estimated_minutes,
           points,
           created_by: input.created_by_member_id,
           status: 'pending',
+          has_subtasks: input.has_subtasks || false,
         })
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+
+      // If has subtasks, create them
+      if (input.has_subtasks && input.subtasks && input.subtasks.length > 0) {
+        const subtasksToCreate = input.subtasks.map(subtask => ({
+          task_id: task.id,
+          title: subtask.title,
+          points: subtask.points,
+          sort_order: subtask.sort_order,
+          is_completed: false,
+        }));
+
+        const { error: subtasksError } = await supabase
+          .from('subtasks')
+          .insert(subtasksToCreate);
+
+        if (subtasksError) {
+          // If subtasks creation fails, delete the task
+          await supabase.from('tasks').delete().eq('id', task.id);
+          throw subtasksError;
+        }
+      }
+
+      return task;
     },
     onSuccess: (data) => {
       // Invalidate tasks queries to refetch
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+      // Also invalidate subtasks if they were created
+      if (data.has_subtasks) {
+        queryClient.invalidateQueries({ queryKey: ['subtasks', data.id] });
+      }
     },
   });
 }
@@ -184,16 +223,10 @@ export function useUpdateTask() {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: UpdateTaskInput }) => {
-      // Recalculate points if estimated_minutes changed
-      const updatesToApply: any = { ...updates };
-
-      if (updates.estimated_minutes !== undefined) {
-        updatesToApply.points = Math.ceil(updates.estimated_minutes / 5);
-      }
-
+      // Use updates as-is, no automatic points calculation
       const { data, error } = await supabase
         .from('tasks')
-        .update(updatesToApply)
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
@@ -221,61 +254,19 @@ export function useCompleteTask() {
       taskId: string;
       actualMinutes?: number;
     }) => {
-      const { data: task, error: fetchError } = await supabase
-        .from('tasks')
-        .select('*, assignee:members!tasks_assignee_id_fkey(*)')
-        .eq('id', taskId)
-        .single();
+      // Use atomic RPC function to prevent race conditions
+      // This handles task completion + points award + streak calculation in a single transaction
+      const { data, error } = await supabase.rpc('complete_task_atomic', {
+        task_uuid: taskId,
+        actual_mins: actualMinutes || null,
+      });
 
-      if (fetchError) throw fetchError;
+      if (error) throw error;
 
-      // Update task as completed
-      const { error: updateError } = await supabase
-        .from('tasks')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          actual_minutes: actualMinutes,
-        })
-        .eq('id', taskId);
-
-      if (updateError) throw updateError;
-
-      // Award points to assignee (if assigned) and update streak
-      if (task.assignee_id) {
-        const assignee = task.assignee;
-        const newPoints = (assignee.points || 0) + task.points;
-        const newLevel = calculateLevel(newPoints);
-
-        // Calculate streak
-        const now = new Date();
-        const lastCompleted = assignee.last_completed_at
-          ? new Date(assignee.last_completed_at)
-          : null;
-
-        let newStreak = 1;
-        if (lastCompleted) {
-          const hoursSinceLastTask = (now.getTime() - lastCompleted.getTime()) / (1000 * 60 * 60);
-          // If within 48 hours, increment streak; otherwise reset to 1
-          if (hoursSinceLastTask <= 48) {
-            newStreak = (assignee.streak_days || 0) + 1;
-          }
-        }
-
-        const { error: pointsError } = await supabase
-          .from('members')
-          .update({
-            points: newPoints,
-            level: newLevel,
-            streak_days: newStreak,
-            last_completed_at: now.toISOString(),
-          })
-          .eq('id', task.assignee_id);
-
-        if (pointsError) throw pointsError;
-      }
-
-      return { task, pointsAwarded: task.points };
+      return {
+        task: data.task,
+        pointsAwarded: data.points_awarded,
+      };
     },
     onSuccess: (data) => {
       // Track task completed

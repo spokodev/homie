@@ -11,7 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { Typography, Spacing, BorderRadius, Shadows } from '@/theme';
+import { useThemeColors } from '@/contexts/ThemeContext';
 import { useMyTasks } from '@/hooks/useTasks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
@@ -20,11 +21,14 @@ import { useMembers } from '@/hooks/useMembers';
 import { useCaptain } from '@/hooks/useCaptain';
 import { TASK_CATEGORIES, TaskCategoryId } from '@/constants';
 import { NetworkErrorView } from '@/components/NetworkErrorView';
+import { SkeletonCard, SkeletonList } from '@/components/Skeleton';
+import { AnimatedFAB } from '@/components/AnimatedButton';
 
 type SortOption = 'due_date' | 'points' | 'alphabetical';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { user } = useAuth();
   const { household, member } = useHousehold();
   const { data: tasks = [], isLoading, refetch, isRefetching, error, isError } = useMyTasks(
@@ -37,6 +41,8 @@ export default function HomeScreen() {
   // Filter and sort states
   const [selectedCategory, setSelectedCategory] = useState<TaskCategoryId | 'all'>('all');
   const [sortBy, setSortBy] = useState<SortOption>('due_date');
+
+  const styles = createStyles(colors);
 
   // Real-time subscriptions
   useTasksRealtime(household?.id);
@@ -156,20 +162,20 @@ export default function HomeScreen() {
             style={styles.settingsButton}
             onPress={() => router.push('/(modals)/settings')}
           >
-            <Ionicons name="settings-outline" size={24} color={Colors.text} />
+            <Ionicons name="settings-outline" size={24} color={colors.text.primary} />
           </TouchableOpacity>
         </View>
 
         {/* Captain Card */}
         {captainLoading ? (
           <View style={[styles.captainCard, styles.captainCardLoading]}>
-            <ActivityIndicator size="small" color={Colors.primary} />
+            <ActivityIndicator size="small" color={colors.primary.default} />
             <Text style={styles.captainLoadingText}>Loading captain...</Text>
           </View>
         ) : captain ? (
           <View style={styles.captainCard}>
             <View style={styles.captainBadge}>
-              <MaterialCommunityIcons name="crown" size={20} color={Colors.accent} />
+              <MaterialCommunityIcons name="crown" size={20} color={colors.accent.default} />
             </View>
             <View style={styles.captainInfo}>
               <Text style={styles.captainTitle}>Captain of the Week</Text>
@@ -182,7 +188,7 @@ export default function HomeScreen() {
                   </Text>
                   {captain.average_rating && (
                     <View style={styles.captainRating}>
-                      <Ionicons name="star" size={12} color={Colors.accent} />
+                      <Ionicons name="star" size={12} color={colors.accent.default} />
                       <Text style={styles.captainRatingText}>
                         {captain.average_rating.toFixed(1)}
                       </Text>
@@ -208,7 +214,7 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={[styles.captainCard, styles.captainCardEmpty]}>
-            <MaterialCommunityIcons name="crown-outline" size={32} color={Colors.textSecondary} />
+            <MaterialCommunityIcons name="crown-outline" size={32} color={colors.text.secondary} />
             <Text style={styles.captainEmptyText}>No captain assigned yet</Text>
           </View>
         )}
@@ -226,7 +232,7 @@ export default function HomeScreen() {
           {overdueTasks.length > 0 && (
             <View style={styles.overdueContainer}>
               <View style={styles.overdueBadge}>
-                <Ionicons name="alert-circle" size={16} color={Colors.error} />
+                <Ionicons name="alert-circle" size={16} color={colors.error.default} />
                 <Text style={styles.overdueText}>
                   {overdueTasks.length} overdue task{overdueTasks.length > 1 ? 's' : ''}
                 </Text>
@@ -325,8 +331,8 @@ export default function HomeScreen() {
           </View>
 
           {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={Colors.primary} />
+            <View style={{ paddingHorizontal: Spacing.lg, paddingTop: Spacing.md }}>
+              <SkeletonList count={3} />
             </View>
           ) : filteredAndSortedTasks.length === 0 ? (
             selectedCategory !== 'all' ? (
@@ -359,12 +365,12 @@ export default function HomeScreen() {
                     <Text style={styles.taskTitle} numberOfLines={2}>{task.title}</Text>
                     {task.recurring_task_id && (
                       <View style={styles.recurringIndicator}>
-                        <Ionicons name="repeat" size={14} color={Colors.secondary} />
+                        <Ionicons name="repeat" size={14} color={colors.secondary.default} />
                       </View>
                     )}
                     {isOverdue && (
                       <View style={styles.overdueIndicator}>
-                        <Ionicons name="alert-circle" size={14} color={Colors.error} />
+                        <Ionicons name="alert-circle" size={14} color={colors.error.default} />
                       </View>
                     )}
                   </View>
@@ -398,17 +404,17 @@ export default function HomeScreen() {
         {/* Quick Stats */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Ionicons name="star" size={20} color={Colors.accent} />
+            <Ionicons name="star" size={20} color={colors.accent.default} />
             <Text style={styles.statValue}>{stats.points}</Text>
             <Text style={styles.statLabel}>Points</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="flame" size={20} color={Colors.warning} />
+            <Ionicons name="flame" size={20} color={colors.warning.default} />
             <Text style={styles.statValue}>{stats.streak}</Text>
             <Text style={styles.statLabel}>Streak</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="trophy" size={20} color={Colors.primary} />
+            <Ionicons name="trophy" size={20} color={colors.primary.default} />
             <Text style={styles.statValue}>#{stats.rank || '-'}</Text>
             <Text style={styles.statLabel}>Rank</Text>
           </View>
@@ -416,17 +422,25 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab} onPress={handleCreateTask}>
-        <Ionicons name="add" size={28} color={Colors.white} />
-      </TouchableOpacity>
+      <AnimatedFAB
+        icon={<Ionicons name="add" size={28} color={colors.text.inverse} />}
+        onPress={handleCreateTask}
+        accessibilityLabel="Create new task"
+        accessibilityHint="Opens the create task modal"
+        style={{
+          position: 'absolute',
+          bottom: 100,
+          right: Spacing.lg,
+        }}
+      />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background.primary,
   },
   scrollContent: {
     paddingBottom: Spacing.xxl * 2,
@@ -440,17 +454,17 @@ const styles = StyleSheet.create({
   },
   greeting: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   householdName: {
     ...Typography.h3,
-    color: Colors.text,
+    color: colors.text.primary,
   },
   settingsButton: {
     padding: Spacing.sm,
   },
   captainCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.surface.primary,
     marginHorizontal: Spacing.lg,
     marginVertical: Spacing.md,
     padding: Spacing.md,
@@ -463,7 +477,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -8,
     left: Spacing.md,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary.default,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
     borderRadius: BorderRadius.small,
@@ -473,7 +487,7 @@ const styles = StyleSheet.create({
   },
   captainTitle: {
     ...Typography.labelSmall,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     marginBottom: Spacing.xs,
   },
   captainDetails: {
@@ -486,12 +500,12 @@ const styles = StyleSheet.create({
   },
   captainName: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text.primary,
     fontWeight: '600',
   },
   captainDays: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   captainRating: {
     flexDirection: 'row',
@@ -500,7 +514,7 @@ const styles = StyleSheet.create({
   },
   captainRatingText: {
     ...Typography.labelSmall,
-    color: Colors.accent,
+    color: colors.accent.default,
     marginLeft: 2,
   },
   captainCardLoading: {
@@ -510,7 +524,7 @@ const styles = StyleSheet.create({
   },
   captainLoadingText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     marginTop: Spacing.sm,
   },
   captainCardEmpty: {
@@ -521,17 +535,17 @@ const styles = StyleSheet.create({
   },
   captainEmptyText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   rateButton: {
-    backgroundColor: Colors.secondary,
+    backgroundColor: colors.secondary.default,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
   },
   rateButtonText: {
     ...Typography.labelMedium,
-    color: Colors.white,
+    color: colors.text.inverse,
   },
   rateButtonTextDisabled: {
     opacity: 0.6,
@@ -548,11 +562,11 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text.primary,
   },
   seeAllButton: {
     ...Typography.bodyMedium,
-    color: Colors.primary,
+    color: colors.primary.default,
     fontWeight: '600',
   },
   loadingContainer: {
@@ -570,17 +584,17 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text.primary,
     marginBottom: Spacing.sm,
   },
   emptyText: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
   },
   taskCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.surface.primary,
     marginHorizontal: Spacing.lg,
     marginBottom: Spacing.sm,
     padding: Spacing.md,
@@ -598,7 +612,7 @@ const styles = StyleSheet.create({
   },
   taskTitle: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: colors.text.primary,
     fontWeight: '500',
   },
   taskMeta: {
@@ -608,22 +622,22 @@ const styles = StyleSheet.create({
   },
   taskRoom: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
     marginRight: Spacing.sm,
   },
   taskTime: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   taskPoints: {
-    backgroundColor: Colors.accent + '20',
+    backgroundColor: colors.accent.subtle,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.small,
   },
   taskPointsText: {
     ...Typography.labelSmall,
-    color: Colors.text,
+    color: colors.text.primary,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -632,7 +646,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   statCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.surface.primary,
     padding: Spacing.md,
     borderRadius: BorderRadius.medium,
     alignItems: 'center',
@@ -642,18 +656,18 @@ const styles = StyleSheet.create({
   },
   statValue: {
     ...Typography.h4,
-    color: Colors.text,
+    color: colors.text.primary,
     marginTop: Spacing.xs,
   },
   statLabel: {
     ...Typography.labelSmall,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   fab: {
     position: 'absolute',
     bottom: 100,
     right: Spacing.lg,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary.default,
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -669,7 +683,7 @@ const styles = StyleSheet.create({
   overdueBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.error + '15',
+    backgroundColor: colors.error.subtle,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
@@ -678,7 +692,7 @@ const styles = StyleSheet.create({
   },
   overdueText: {
     ...Typography.labelMedium,
-    color: Colors.error,
+    color: colors.error.default,
     fontWeight: '600',
   },
   filtersScroll: {
@@ -695,23 +709,23 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
     borderWidth: 2,
-    borderColor: Colors.gray300,
-    backgroundColor: Colors.white,
+    borderColor: colors.border.default,
+    backgroundColor: colors.surface.primary,
     gap: Spacing.xs,
   },
   filterChipActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '10',
+    borderColor: colors.primary.default,
+    backgroundColor: colors.primary.subtle,
   },
   filterChipIcon: {
     fontSize: 16,
   },
   filterChipText: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: colors.text.primary,
   },
   filterChipTextActive: {
-    color: Colors.primary,
+    color: colors.primary.default,
     fontWeight: '600',
   },
   sortContainer: {
@@ -723,29 +737,29 @@ const styles = StyleSheet.create({
   },
   sortLabel: {
     ...Typography.bodySmall,
-    color: Colors.textSecondary,
+    color: colors.text.secondary,
   },
   sortButton: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.small,
-    backgroundColor: Colors.gray300,
+    backgroundColor: colors.border.default,
   },
   sortButtonActive: {
-    backgroundColor: Colors.secondary,
+    backgroundColor: colors.secondary.default,
   },
   sortButtonText: {
     ...Typography.labelSmall,
-    color: Colors.text,
+    color: colors.text.primary,
   },
   sortButtonTextActive: {
-    color: Colors.white,
+    color: colors.text.inverse,
     fontWeight: '600',
   },
   // Task Card Enhancements
   taskCardOverdue: {
     borderLeftWidth: 3,
-    borderLeftColor: Colors.error,
+    borderLeftColor: colors.error.default,
   },
   taskTitleRow: {
     flexDirection: 'row',
@@ -769,7 +783,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   taskTimeOverdue: {
-    color: Colors.error,
+    color: colors.error.default,
     fontWeight: '600',
   },
 });

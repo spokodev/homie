@@ -1,4 +1,4 @@
-import { measureTransaction } from './performance';
+import { measureAsync as measureTransaction } from './performance';
 
 /**
  * Performance utilities for optimizing app performance
@@ -189,7 +189,7 @@ export function shouldPrefetch(): boolean {
 /**
  * Image optimization helper
  */
-export function getOptimizedImageUri(uri: string, width?: number, quality?: number): string {
+export function getOptimizedImageUri(uri: string, _width?: number, _quality?: number): string {
   // For remote images, you could add query params for optimization
   // For now, just return the URI as-is
   // In production, you might use a CDN with image optimization
