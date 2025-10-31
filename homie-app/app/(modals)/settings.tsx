@@ -45,7 +45,7 @@ export default function SettingsScreen() {
   const styles = createStyles(colors);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.primary }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface.primary, borderBottomColor: colors.border.default }]}>
         <TouchableOpacity onPress={() => router.back()}>

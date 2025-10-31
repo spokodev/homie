@@ -546,10 +546,17 @@ const createStyles = (colors: any) => StyleSheet.create({
   ownMessageBubble: {
     backgroundColor: colors.primary.default,
     borderBottomRightRadius: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
   otherMessageBubble: {
     backgroundColor: colors.surface.primary,
     borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.border.default,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
