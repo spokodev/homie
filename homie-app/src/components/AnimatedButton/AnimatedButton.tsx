@@ -167,7 +167,7 @@ export function AnimatedButton({
           {
             backgroundColor: currentVariant.backgroundColor,
             borderWidth: currentVariant.borderWidth,
-            borderColor: currentVariant.borderColor,
+            ...(currentVariant.borderColor ? { borderColor: currentVariant.borderColor } : {}),
             borderRadius: BorderRadius.full,
             paddingVertical: currentSize.paddingVertical,
             paddingHorizontal: currentSize.paddingHorizontal,
