@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Typography, Spacing, BorderRadius } from '@/theme';
 import { useThemeColors } from '@/contexts/ThemeContext';
-import { Room, useRooms } from '@/hooks/useRooms';
+import { useRooms } from '@/hooks/useRooms';
 
 export interface RoomMultiSelectPickerProps {
   /** Selected room IDs */
@@ -447,6 +447,6 @@ const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.c
   },
   doneButtonText: {
     ...Typography.button,
-    color: colors.white,
+    color: '#FFFFFF',
   },
 });

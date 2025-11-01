@@ -42,42 +42,41 @@ export function SuccessAnimation({
     // Trigger haptic feedback
     HapticFeedback.success();
 
-      // Start animations
-      Animated.parallel([
-        // Fade in
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        // Scale up with bounce
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          speed: 5,
-          bounciness: 10,
-          useNativeDriver: true,
-        }),
-        // Slide up
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        // Rotate
-        Animated.timing(rotateAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    // Start animations
+    Animated.parallel([
+      // Fade in
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      // Scale up with bounce
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        speed: 5,
+        bounciness: 10,
+        useNativeDriver: true,
+      }),
+      // Slide up
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      // Rotate
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-      // Auto hide after duration
-      const timer = setTimeout(() => {
-        hideAnimation();
-      }, duration);
+    // Auto hide after duration
+    const timer = setTimeout(() => {
+      hideAnimation();
+    }, duration);
 
-      return () => clearTimeout(timer);
-    }
+    return () => clearTimeout(timer);
   }, [visible]);
 
   const hideAnimation = () => {
