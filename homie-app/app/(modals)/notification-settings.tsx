@@ -227,7 +227,7 @@ export default function NotificationSettingsScreen() {
                 </View>
                 <Switch
                   value={preferences[setting.key]}
-                  onValueChange={(value) => handleToggle(setting.key, preferences[setting.key])}
+                  onValueChange={() => handleToggle(setting.key, preferences[setting.key])}
                   trackColor={{ false: colors.border, true: colors.primary + '60' }}
                   thumbColor={preferences[setting.key] ? colors.primary : colors.textSecondary}
                   disabled={toggleNotification.isPending}

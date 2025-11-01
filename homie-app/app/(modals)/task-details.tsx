@@ -255,7 +255,7 @@ export default function TaskDetailsScreen() {
   };
 
   const handleSaveAsTemplate = async () => {
-    if (!task || !household) return;
+    if (!task || !household || !member) return;
 
     try {
       await createTemplate.mutateAsync({
@@ -265,7 +265,7 @@ export default function TaskDetailsScreen() {
         description: task.description || undefined,
         estimated_minutes: task.estimated_minutes || undefined,
         points: task.points,
-        is_system: false,
+        created_by: member.id,
       });
 
       showToast('Template saved successfully!', 'success');

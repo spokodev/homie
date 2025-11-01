@@ -11,16 +11,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Typography, Spacing, BorderRadius } from '@/theme';
-import { useThemeColors } from '@/contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useRooms, Room } from '@/hooks/useRooms';
 import { NetworkErrorView } from '@/components/NetworkErrorView';
 
 export default function RoomsScreen() {
-  const colors = useThemeColors();
+  const { colors } = useTheme();
   const router = useRouter();
   const { household } = useHousehold();
-  const { data: rooms = [], isLoading, error, isError, refetch } = useRooms(household?.id);
+  const { data: rooms = [], isLoading, isError, refetch } = useRooms(household?.id);
   const styles = createStyles(colors);
 
   const handleAddRoom = () => {

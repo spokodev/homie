@@ -16,16 +16,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Typography, Spacing, BorderRadius } from '@/theme';
-import { useThemeColors } from '@/contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useMessages, useSendMessage, useDeleteMessage, useEditMessage, Message } from '@/hooks/useMessages';
-import { useToggleReaction, COMMON_REACTIONS } from '@/hooks/useMessageReactions';
+import { useToggleReaction } from '@/hooks/useMessageReactions';
 import { MessageReactions } from '@/components/Chat/MessageReactions';
 import { useToast } from '@/components/Toast';
 import { logError } from '@/utils/errorHandling';
 
 export default function ChatScreen() {
-  const colors = useThemeColors();
+  const { colors } = useTheme();
   const { household, member } = useHousehold();
   const { data: messages = [], isLoading, error } = useMessages(household?.id);
   const sendMessage = useSendMessage();

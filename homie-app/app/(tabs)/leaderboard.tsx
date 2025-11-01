@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/theme';
-import { useThemeColors } from '@/contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useMembers } from '@/hooks/useMembers';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useMembersRealtime } from '@/hooks/useRealtimeSubscription';
@@ -24,9 +24,9 @@ import {
 } from '@/utils/gamification';
 
 export default function LeaderboardScreen() {
-  const colors = useThemeColors();
+  const { colors } = useTheme();
   const { household, member: currentMember } = useHousehold();
-  const { data: members = [], isLoading, refetch, isRefetching, error, isError } = useMembers(household?.id);
+  const { data: members = [], isLoading, refetch, isRefetching, isError } = useMembers(household?.id);
   const styles = createStyles(colors);
 
   // Real-time updates
@@ -174,7 +174,7 @@ export default function LeaderboardScreen() {
   );
 }
 
-const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

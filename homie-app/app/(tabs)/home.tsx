@@ -12,26 +12,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/theme';
-import { useThemeColors } from '@/contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useMyTasks } from '@/hooks/useTasks';
-import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useTasksRealtime, useMembersRealtime } from '@/hooks/useRealtimeSubscription';
 import { useMembers } from '@/hooks/useMembers';
 import { useCaptain } from '@/hooks/useCaptain';
 import { TASK_CATEGORIES, TaskCategoryId } from '@/constants';
 import { NetworkErrorView } from '@/components/NetworkErrorView';
-import { SkeletonCard, SkeletonList } from '@/components/Skeleton';
+import { SkeletonList } from '@/components/Skeleton';
 import { AnimatedFAB } from '@/components/AnimatedButton';
 
 type SortOption = 'due_date' | 'points' | 'alphabetical';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const colors = useThemeColors();
-  const { user } = useAuth();
+  const { colors } = useTheme();
   const { household, member } = useHousehold();
-  const { data: tasks = [], isLoading, refetch, isRefetching, error, isError } = useMyTasks(
+  const { data: tasks = [], isLoading, refetch, isRefetching, isError } = useMyTasks(
     household?.id,
     member?.id
   );

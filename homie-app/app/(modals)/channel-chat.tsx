@@ -19,7 +19,6 @@ import { useChatChannel, useLeaveChannel, useToggleChannelMute, useUpdateLastRea
 import { useMessages, useSendMessage, useDeleteMessage } from '@/hooks/useMessages';
 import { useToggleReaction } from '@/hooks/useMessageReactions';
 import { MessageReactions } from '@/components/Chat/MessageReactions';
-import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { supabase } from '@/lib/supabase';
 
@@ -38,7 +37,6 @@ export default function ChannelChatScreen() {
   const colors = useThemeColors();
   const styles = createStyles(colors);
   const { channelId } = useLocalSearchParams<{ channelId: string }>();
-  const { user } = useAuth();
   const { household, member } = useHousehold();
 
   const [message, setMessage] = useState('');

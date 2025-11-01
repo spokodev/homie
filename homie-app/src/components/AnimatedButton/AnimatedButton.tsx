@@ -11,7 +11,7 @@ import {
   AccessibilityProps,
 } from 'react-native';
 import { HapticFeedback } from '@/utils/haptics';
-import { useTheme, useThemeColors } from '@/contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Spacing, BorderRadius } from '@/theme';
 
 interface AnimatedButtonProps extends TouchableOpacityProps, AccessibilityProps {
@@ -113,7 +113,7 @@ export function AnimatedButton({
   // Variant configurations
   const variantConfig = {
     primary: {
-      backgroundColor: disabled ? colors.primary.disabled : colors.primary.default,
+      backgroundColor: disabled ? colors.primary.subtle : colors.primary.default,
       borderWidth: 0,
       textColor: colors.text.inverse,
     },
@@ -125,11 +125,11 @@ export function AnimatedButton({
     ghost: {
       backgroundColor: 'transparent',
       borderWidth: 2,
-      borderColor: disabled ? colors.border.disabled : colors.primary.default,
+      borderColor: disabled ? colors.border.default : colors.primary.default,
       textColor: disabled ? colors.text.tertiary : colors.primary.default,
     },
     danger: {
-      backgroundColor: disabled ? colors.error.disabled : colors.error.default,
+      backgroundColor: disabled ? colors.error.subtle : colors.error.default,
       borderWidth: 0,
       textColor: colors.text.inverse,
     },

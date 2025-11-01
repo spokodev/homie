@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/theme';
-import { useThemeColors } from '@/contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useMembers } from '@/hooks/useMembers';
@@ -15,8 +15,8 @@ import { usePremiumStore } from '@/stores/premium.store';
 import { useCaptainStats } from '@/hooks/useCaptain';
 
 export default function ProfileScreen() {
-  const colors = useThemeColors();
-  const { user, signOut } = useAuth();
+  const { colors } = useTheme();
+  const { signOut } = useAuth();
   const router = useRouter();
   const { household, member } = useHousehold();
   const { data: allMembers = [] } = useMembers(household?.id);

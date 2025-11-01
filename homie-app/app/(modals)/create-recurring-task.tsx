@@ -13,7 +13,6 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Typography, Spacing, BorderRadius } from '@/theme';
 import { useThemeColors } from '@/contexts/ThemeContext';
-import { useHousehold } from '@/contexts/HouseholdContext';
 import { useCreateRecurringTask } from '@/hooks/useRecurringTasks';
 import { useMembers } from '@/hooks/useMembers';
 import { useRooms } from '@/hooks/useRooms';

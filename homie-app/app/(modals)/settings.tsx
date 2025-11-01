@@ -44,14 +44,14 @@ export default function SettingsScreen() {
   const styles = createStyles(colors);
 
   return (
-    <View style={{ flex: 1, backgroundColor: themeColors.background.primary }}>
+    <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
       <SafeAreaView style={styles.container} edges={['top']}>
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: themeColors.surface.primary, borderBottomColor: themeColors.border.default }]}>
+        <View style={[styles.header, { backgroundColor: colors.surface.primary, borderBottomColor: colors.border.default }]}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="close" size={24} color={themeColors.text.primary} />
+            <Ionicons name="close" size={24} color={colors.text.primary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: themeColors.text.primary }]}>Settings</Text>
+          <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Settings</Text>
           <View style={{ width: 24 }} />
         </View>
 

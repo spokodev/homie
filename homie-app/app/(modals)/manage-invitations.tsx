@@ -12,8 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Typography, Spacing, BorderRadius } from '@/theme';
-import { useTheme } from '@/contexts/ThemeContext';
+import { Typography, Spacing, BorderRadius, Colors } from '@/theme';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useHouseholdInvitations, useCancelInvitation } from '@/hooks/useInvitations';
 import { useToast } from '@/components/Toast';
@@ -22,7 +21,6 @@ import * as Clipboard from 'expo-clipboard';
 
 export default function ManageInvitationsModal() {
   const router = useRouter();
-  const { colors } = useTheme();
   const { household, member } = useHousehold();
   const { showToast } = useToast();
   const [refreshing, setRefreshing] = useState(false);
@@ -136,7 +134,7 @@ export default function ManageInvitationsModal() {
             <Ionicons
               name={isExpanded ? 'chevron-up' : 'chevron-down'}
               size={20}
-              color={Colors.textSecondary}
+              color={Colors.text.secondary}
             />
           </View>
         </TouchableOpacity>
@@ -167,7 +165,7 @@ export default function ManageInvitationsModal() {
           <View style={{ width: 24 }} />
         </View>
         <View style={styles.emptyContainer}>
-          <Ionicons name="lock-closed" size={48} color={Colors.textSecondary} />
+          <Ionicons name="lock-closed" size={48} color={Colors.text.secondary} />
           <Text style={styles.emptyText}>Only admins can manage invitations</Text>
         </View>
       </SafeAreaView>
@@ -178,7 +176,7 @@ export default function ManageInvitationsModal() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color={Colors.text} />
+          <Ionicons name="close" size={24} color={Colors.text.default} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Manage Invitations</Text>
         <View style={{ width: 24 }} />
@@ -281,7 +279,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: Colors.text.default,
   },
   scrollView: {
     flex: 1,
@@ -300,7 +298,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...Typography.h5,
-    color: Colors.text,
+    color: Colors.text.default,
     marginBottom: Spacing.md,
   },
   invitationCard: {
@@ -320,7 +318,7 @@ const styles = StyleSheet.create({
   },
   memberName: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: Colors.text.default,
     fontWeight: '600',
     marginBottom: 4,
   },
@@ -403,7 +401,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     ...Typography.bodySmall,
-    color: Colors.text,
+    color: Colors.text.default,
     flex: 1,
     lineHeight: 18,
   },
