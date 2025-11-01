@@ -44,7 +44,7 @@ export default function RoomsScreen() {
       </Text>
       {item.notes_count !== undefined && item.notes_count > 0 && (
         <View style={styles.notesCountBadge}>
-          <Ionicons name="document-text" size={12} color={colors.white} />
+          <Ionicons name="document-text" size={12} color="#FFFFFF" />
           <Text style={styles.notesCountText}>{item.notes_count}</Text>
         </View>
       )}
@@ -59,7 +59,7 @@ export default function RoomsScreen() {
         Add rooms to organize your household tasks and notes
       </Text>
       <TouchableOpacity style={styles.emptyStateButton} onPress={handleAddRoom}>
-        <Ionicons name="add" size={20} color={colors.white} />
+        <Ionicons name="add" size={20} color="#FFFFFF" />
         <Text style={styles.emptyStateButtonText}>Add First Room</Text>
       </TouchableOpacity>
     </View>
@@ -85,7 +85,7 @@ export default function RoomsScreen() {
         <Text style={styles.title}>Rooms & Notes</Text>
         {rooms.length > 0 && (
           <TouchableOpacity style={styles.addButton} onPress={handleAddRoom}>
-            <Ionicons name="add" size={24} color={colors.primary} />
+            <Ionicons name="add" size={24} color={colors.primary.default} />
           </TouchableOpacity>
         )}
       </View>
@@ -93,7 +93,7 @@ export default function RoomsScreen() {
       {/* Rooms Grid */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary.default} />
           <Text style={styles.loadingText}>Loading rooms...</Text>
         </View>
       ) : (
@@ -111,7 +111,7 @@ export default function RoomsScreen() {
   );
 }
 
-const createStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
