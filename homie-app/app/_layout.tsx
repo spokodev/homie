@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react-native';
-import { useThemeColors } from '@/contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { usePremiumStore } from '@/stores/premium.store';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { HouseholdProvider } from '@/contexts/HouseholdContext';
@@ -58,7 +58,7 @@ function NavigationContent() {
   useProtectedRoute(); // Protect routes based on auth state
   useNotifications(); // Initialize notification listeners
   useDeepLinking(); // Handle deep links for email verification and password reset
-  const colors = useThemeColors();
+  const { colors } = useTheme();
 
   const generateRecurringTasks = useGenerateRecurringTaskInstances();
 

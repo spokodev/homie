@@ -82,7 +82,7 @@ export default function LeaderboardScreen() {
           {/* Stats Row */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Ionicons name="star" size={16} color={colors.accent} />
+              <Ionicons name="star" size={16} color={colors.accent.default} />
               <Text style={styles.statValue}>{member.points}</Text>
               <Text style={styles.statLabel}>points</Text>
             </View>

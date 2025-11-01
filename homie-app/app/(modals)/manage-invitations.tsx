@@ -159,7 +159,7 @@ export default function ManageInvitationsModal() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="close" size={24} color={Colors.text} />
+            <Ionicons name="close" size={24} color={Colors.text.default} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Manage Invitations</Text>
           <View style={{ width: 24 }} />
