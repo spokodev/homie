@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h4,
-    color: Colors.text,
+    color: Colors.text.default,
     flex: 1,
   },
   closeButton: {

@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.labelMedium,
-    color: Colors.text,
+    color: Colors.text.default,
     fontWeight: '500',
   },
   required: {
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   text: {
     flex: 1,
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: Colors.text.default,
   },
   placeholderText: {
     color: Colors.gray400,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: Colors.text.default,
   },
   modalCancelText: {
     ...Typography.button,

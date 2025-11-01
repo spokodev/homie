@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.labelLarge,
-    color: Colors.text,
+    color: Colors.text.default,
   },
   addButton: {
     flexDirection: 'row',
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     ...Typography.h5,
-    color: Colors.text,
+    color: Colors.text.default,
     textAlign: 'center',
     marginBottom: Spacing.lg,
   },
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: Colors.text.default,
   },
   cancelButton: {
     backgroundColor: Colors.white,

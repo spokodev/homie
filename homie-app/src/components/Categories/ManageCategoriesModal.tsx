@@ -404,12 +404,12 @@ const styles = StyleSheet.create({
   },
   formTitle: {
     ...Typography.h5,
-    color: Colors.text,
+    color: Colors.text.default,
     marginBottom: Spacing.md,
   },
   formLabel: {
     ...Typography.labelMedium,
-    color: Colors.text,
+    color: Colors.text.default,
     marginTop: Spacing.md,
     marginBottom: Spacing.sm,
   },
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: Colors.text.default,
     borderWidth: 1,
     borderColor: Colors.gray300,
   },
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     ...Typography.button,
-    color: Colors.text,
+    color: Colors.text.default,
   },
   createButton: {
     flex: 1,

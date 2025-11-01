@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.labelMedium,
-    color: Colors.text,
+    color: Colors.text.default,
     fontWeight: '500',
   },
   required: {
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: Colors.text.default,
     paddingVertical: Spacing.sm,
     minHeight: 44,
   },

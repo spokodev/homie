@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { HapticFeedback } from '@/utils/haptics';
-import { Spacing } from '@/theme';
+import { Spacing, Typography } from '@/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -37,9 +37,10 @@ export function SuccessAnimation({
   const translateY = useRef(new Animated.Value(50)).current;
 
   useEffect(() => {
-    if (visible) {
-      // Trigger haptic feedback
-      HapticFeedback.success();
+    if (!visible) return;
+
+    // Trigger haptic feedback
+    HapticFeedback.success();
 
       // Start animations
       Animated.parallel([
@@ -119,8 +120,8 @@ export function SuccessAnimation({
           style={[
             styles.container,
             {
-              backgroundColor: colors.surface,
-              shadowColor: colors.primary,
+              backgroundColor: colors.surface.primary,
+              shadowColor: colors.primary.default,
               opacity: fadeAnim,
               transform: [
                 { scale: scaleAnim },
@@ -135,7 +136,7 @@ export function SuccessAnimation({
             {message}
           </Text>
           {points && (
-            <View style={[styles.pointsBadge, { backgroundColor: colors.accent }]}>
+            <View style={[styles.pointsBadge, { backgroundColor: colors.accent.default }]}>
               <Text style={[styles.pointsText, { color: colors.text.inverse }]}>
                 +{points} points
               </Text>

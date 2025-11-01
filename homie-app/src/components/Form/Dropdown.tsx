@@ -101,7 +101,7 @@ export function Dropdown<T = string>({
           <Ionicons
             name={selectedOption.icon}
             size={20}
-            color={disabled ? Colors.gray400 : Colors.text}
+            color={disabled ? Colors.gray400 : Colors.text.default}
             style={styles.leftIcon}
           />
         )}
@@ -139,7 +139,7 @@ export function Dropdown<T = string>({
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{label || 'Select an option'}</Text>
               <TouchableOpacity onPress={() => setVisible(false)}>
-                <Ionicons name="close" size={24} color={Colors.text} />
+                <Ionicons name="close" size={24} color={Colors.text.default} />
               </TouchableOpacity>
             </View>
 
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.labelMedium,
-    color: Colors.text,
+    color: Colors.text.default,
     fontWeight: '500',
   },
   required: {
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   text: {
     flex: 1,
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: Colors.text.default,
   },
   placeholderText: {
     color: Colors.gray400,
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: Colors.text.default,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: Colors.text.default,
     paddingVertical: Spacing.sm,
   },
   optionsList: {
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   optionText: {
     flex: 1,
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: Colors.text.default,
   },
   optionTextSelected: {
     color: Colors.primary,

@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: Colors.text.default,
     fontWeight: '600',
   },
   totalPointsBadge: {
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   },
   subtaskTitle: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: Colors.text.default,
     flex: 1,
   },
   pointsBadge: {
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   editInput: {
     flex: 1,
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: Colors.text.default,
     borderBottomWidth: 1,
     borderBottomColor: Colors.gray300,
     paddingVertical: Spacing.xs,
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   pointsEditInput: {
     width: 60,
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: Colors.text.default,
     borderBottomWidth: 1,
     borderBottomColor: Colors.gray300,
     paddingVertical: Spacing.xs,
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: Colors.text.default,
     borderWidth: 1,
     borderColor: Colors.gray300,
   },
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.medium,
     padding: Spacing.md,
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: Colors.text.default,
     borderWidth: 1,
     borderColor: Colors.gray300,
     textAlign: 'center',

@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h3,
-    color: Colors.text,
+    color: Colors.text.default,
     marginBottom: Spacing.sm,
     textAlign: 'center',
   },
