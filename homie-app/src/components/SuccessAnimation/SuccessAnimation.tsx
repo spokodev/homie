@@ -7,9 +7,9 @@ import {
   Dimensions,
   Modal,
 } from 'react-native';
-import { useThemeColors } from '@/contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { HapticFeedback } from '@/utils/haptics';
-import { Typography, Spacing } from '@/theme';
+import { Spacing } from '@/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,7 +30,7 @@ export function SuccessAnimation({
   onComplete,
   duration = 2000,
 }: SuccessAnimationProps) {
-  const colors = useThemeColors();
+  const { colors } = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.3)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;

@@ -11,7 +11,7 @@ import {
   AccessibilityProps,
 } from 'react-native';
 import { HapticFeedback } from '@/utils/haptics';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useTheme, useThemeColors } from '@/contexts/ThemeContext';
 import { Spacing, BorderRadius } from '@/theme';
 
 interface AnimatedButtonProps extends TouchableOpacityProps, AccessibilityProps {
@@ -229,7 +229,7 @@ export function AnimatedFAB({
   accessibilityLabel: string;
   accessibilityHint?: string;
 }) {
-  const colors = useThemeColors();
+  const { colors } = useTheme();
   const scaleValue = useRef(new Animated.Value(1)).current;
   const rotateValue = useRef(new Animated.Value(0)).current;
 
