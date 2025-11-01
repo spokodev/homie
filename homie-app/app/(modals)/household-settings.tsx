@@ -38,6 +38,9 @@ export default function HouseholdSettingsScreen() {
 
   const isAdmin = member?.role === 'admin';
 
+  // Create styles early to avoid hoisting issues
+  const styles = createStyles(colors);
+
   const handleSaveName = async () => {
     if (!household || !isAdmin) return;
 
@@ -140,8 +143,6 @@ export default function HouseholdSettingsScreen() {
 
   // Calculate total points
   const totalPoints = members.reduce((sum, m) => sum + (m.points || 0), 0);
-
-  const styles = createStyles(colors);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { TextInput } from '@/components/Form/TextInput';
 import { Button } from '@/components/Button/Button';
 import { useToast } from '@/components/Toast';
@@ -22,6 +23,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 
 export default function JoinHouseholdScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { showToast } = useToast();
   const [inviteCode, setInviteCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
@@ -110,7 +112,7 @@ export default function JoinHouseholdScreen() {
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color={Colors.text} />
+              <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleSkip}>
               <Text style={styles.skipButton}>Create New</Text>

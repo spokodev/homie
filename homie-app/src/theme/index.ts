@@ -30,11 +30,20 @@ export const Colors = {
   surface: '#FFFFFF',     // Card/surface background
   card: '#FFFFFF',        // Card background (alias for surface)
 
-  // Text colors
-  text: '#18181B',        // Primary text (gray900)
-  textSecondary: '#52525B', // Secondary text (gray600)
-  textTertiary: '#71717A', // Tertiary text (gray500)
-  textDisabled: '#A1A1AA', // Disabled text (gray400)
+  // Text colors - nested structure for component compatibility
+  text: {
+    default: '#18181B',      // Primary text (gray900)
+    secondary: '#52525B',    // Secondary text (gray600)
+    tertiary: '#71717A',     // Tertiary text (gray500)
+    disabled: '#A1A1AA',     // Disabled text (gray400)
+    inverse: '#FFFFFF',      // Inverse text (for dark backgrounds)
+  },
+
+  // Legacy flat text colors for backward compatibility
+  textPrimary: '#18181B',
+  textSecondary: '#52525B',
+  textTertiary: '#71717A',
+  textDisabled: '#A1A1AA',
 
   // Border colors
   border: '#E4E4E7',      // Default border (gray200)
@@ -98,6 +107,12 @@ export const Typography = {
   },
 
   // Body - Inter
+  body: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    lineHeight: 24,
+    letterSpacing: 0,
+  },
   bodyLarge: {
     fontFamily: 'Inter-Regular',
     fontSize: 16,
@@ -115,6 +130,12 @@ export const Typography = {
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: 0,
+  },
+  caption: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.1,
   },
 
   // Labels

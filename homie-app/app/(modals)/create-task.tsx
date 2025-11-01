@@ -26,7 +26,6 @@ import {
   validateTaskTitle,
   validateTaskDescription,
   validateEstimatedMinutes,
-  validateRoomName,
 } from '@/utils/validation';
 import { trackTaskEvent, ANALYTICS_EVENTS } from '@/utils/analytics';
 import { TASK_TEMPLATES } from '@/constants';
@@ -72,7 +71,7 @@ export default function CreateTaskModal() {
     setPoints(template.points.toString()); // Set points from template
     // Note: template.category would need to be mapped to category_id if we have predefined categories
     // For now, leaving categoryId unset when using templates
-    setDescription(template.description || '');
+    setDescription(''); // Templates don't have description field
     // Templates don't have roomIds, keep current selection
     // Clear errors
     setErrors({});

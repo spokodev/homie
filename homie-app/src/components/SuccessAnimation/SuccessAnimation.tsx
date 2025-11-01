@@ -119,8 +119,8 @@ export function SuccessAnimation({
           style={[
             styles.container,
             {
-              backgroundColor: colors.surface.primary,
-              shadowColor: colors.primary.default,
+              backgroundColor: colors.surface,
+              shadowColor: colors.primary,
               opacity: fadeAnim,
               transform: [
                 { scale: scaleAnim },
@@ -131,11 +131,11 @@ export function SuccessAnimation({
           ]}
         >
           <Text style={styles.emoji}>{emoji}</Text>
-          <Text style={[styles.message, { color: colors.text.primary }]}>
+          <Text style={[styles.message, { color: colors.text.default }]}>
             {message}
           </Text>
           {points && (
-            <View style={[styles.pointsBadge, { backgroundColor: colors.accent.default }]}>
+            <View style={[styles.pointsBadge, { backgroundColor: colors.accent }]}>
               <Text style={[styles.pointsText, { color: colors.text.inverse }]}>
                 +{points} points
               </Text>

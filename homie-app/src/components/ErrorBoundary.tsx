@@ -87,13 +87,13 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h2,
-    color: Colors.text,
+    color: Colors.text.default,
     marginBottom: Spacing.md,
     textAlign: 'center',
   },
   message: {
     ...Typography.bodyLarge,
-    color: Colors.textSecondary,
+    color: Colors.text.secondary,
     textAlign: 'center',
     marginBottom: Spacing.xl,
     lineHeight: 24,

@@ -11,8 +11,8 @@ import {
   AccessibilityProps,
 } from 'react-native';
 import { HapticFeedback } from '@/utils/haptics';
-import { useThemeColors } from '@/contexts/ThemeContext';
-import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Spacing, BorderRadius } from '@/theme';
 
 interface AnimatedButtonProps extends TouchableOpacityProps, AccessibilityProps {
   title: string;
@@ -45,7 +45,7 @@ export function AnimatedButton({
   accessibilityRole = 'button',
   ...props
 }: AnimatedButtonProps) {
-  const colors = useThemeColors();
+  const { colors } = useTheme();
   const scaleValue = useRef(new Animated.Value(1)).current;
   const opacityValue = useRef(new Animated.Value(1)).current;
 
@@ -113,7 +113,7 @@ export function AnimatedButton({
   // Variant configurations
   const variantConfig = {
     primary: {
-      backgroundColor: disabled ? colors.primary.muted : colors.primary.default,
+      backgroundColor: disabled ? colors.primary.disabled : colors.primary.default,
       borderWidth: 0,
       textColor: colors.text.inverse,
     },
@@ -125,11 +125,11 @@ export function AnimatedButton({
     ghost: {
       backgroundColor: 'transparent',
       borderWidth: 2,
-      borderColor: disabled ? colors.border.muted : colors.primary.default,
+      borderColor: disabled ? colors.border.disabled : colors.primary.default,
       textColor: disabled ? colors.text.tertiary : colors.primary.default,
     },
     danger: {
-      backgroundColor: disabled ? colors.error.muted : colors.error.default,
+      backgroundColor: disabled ? colors.error.disabled : colors.error.default,
       borderWidth: 0,
       textColor: colors.text.inverse,
     },

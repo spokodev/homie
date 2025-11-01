@@ -12,7 +12,8 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { Typography, Spacing, BorderRadius } from '@/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useHouseholdInvitations, useCancelInvitation } from '@/hooks/useInvitations';
 import { useToast } from '@/components/Toast';
@@ -21,6 +22,7 @@ import * as Clipboard from 'expo-clipboard';
 
 export default function ManageInvitationsModal() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { household, member } = useHousehold();
   const { showToast } = useToast();
   const [refreshing, setRefreshing] = useState(false);

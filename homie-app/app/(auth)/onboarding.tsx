@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     ...Typography.h2,
-    color: Colors.text,
+    color: Colors.text.default,
     marginBottom: Spacing.sm,
     textAlign: 'center',
   },
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.labelLarge,
-    color: Colors.text,
+    color: Colors.text.default,
     marginBottom: Spacing.sm,
   },
   input: {
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     fontSize: 16,
     fontFamily: 'Inter-Regular',
-    color: Colors.text,
+    color: Colors.text.default,
     backgroundColor: Colors.white,
   },
   inputError: {
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     ...Typography.bodyMedium,
-    color: Colors.text,
+    color: Colors.text.default,
     flex: 1,
     lineHeight: 20,
   },
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     ...Typography.button,
-    color: Colors.text,
+    color: Colors.text.default,
   },
   nextButton: {
     flex: 2,

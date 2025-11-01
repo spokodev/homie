@@ -27,6 +27,9 @@ export default function HouseholdMembersScreen() {
   const { showToast } = useToast();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Create styles early to avoid hoisting issues
+  const styles = createStyles(colors);
+
   const handleAddMember = () => {
     if (currentMember?.role !== 'admin') {
       showToast('Only admins can add members', 'error');
@@ -68,7 +71,7 @@ export default function HouseholdMembersScreen() {
           onPress: async () => {
             setDeletingId(memberId);
             try {
-              await deleteMember.mutateAsync(memberId);
+              await deleteMember.mutateAsync({ id: memberId, householdId: household!.id });
               showToast(`${memberName} removed successfully`, 'success');
               refetch();
             } catch (error: any) {
@@ -159,8 +162,6 @@ export default function HouseholdMembersScreen() {
 
   const humanMembers = members.filter((m) => m.type === 'human');
   const pets = members.filter((m) => m.type === 'pet');
-
-  const styles = createStyles(colors);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

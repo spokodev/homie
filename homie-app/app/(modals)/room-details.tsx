@@ -37,6 +37,9 @@ export default function RoomDetailsScreen() {
   const [showDeleteRoomDialog, setShowDeleteRoomDialog] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
 
+  // Create styles early to avoid hoisting issues
+  const styles = createStyles(colors);
+
   const canAddMoreNotes = isPremium || notes.length < 3;
 
   const handleAddNote = () => {
@@ -106,8 +109,6 @@ export default function RoomDetailsScreen() {
       </SafeAreaView>
     );
   }
-
-  const styles = createStyles(colors);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

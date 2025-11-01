@@ -24,7 +24,6 @@ import {
   validateTaskTitle,
   validateTaskDescription,
   validateEstimatedMinutes,
-  validateRoomName,
 } from '@/utils/validation';
 
 export default function EditTaskModal() {

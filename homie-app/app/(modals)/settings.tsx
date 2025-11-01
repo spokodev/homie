@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Typography, Spacing, BorderRadius } from '@/theme';
-import { useTheme, useThemeColors } from '@/contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAppStore } from '@/stores/app.store';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -20,8 +20,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 export default function SettingsScreen() {
   const router = useRouter();
   const { household } = useHousehold();
-  const colors = useThemeColors();
-  const { colorScheme, toggleTheme, isSystemTheme, setIsSystemTheme } = useTheme();
+  const { colors, colorScheme, toggleTheme, isSystemTheme, setIsSystemTheme } = useTheme();
   const { notificationsEnabled, setNotificationsEnabled } = useAppStore();
   const { enableNotifications, disableNotifications } = useNotifications();
 
@@ -45,15 +44,16 @@ export default function SettingsScreen() {
   const styles = createStyles(colors);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.primary }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface.primary, borderBottomColor: colors.border.default }]}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Settings</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <View style={{ flex: 1, backgroundColor: themeColors.background.primary }}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Header */}
+        <View style={[styles.header, { backgroundColor: themeColors.surface.primary, borderBottomColor: themeColors.border.default }]}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="close" size={24} color={themeColors.text.primary} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: themeColors.text.primary }]}>Settings</Text>
+          <View style={{ width: 24 }} />
+        </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Household Section */}
@@ -226,7 +226,8 @@ export default function SettingsScreen() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 

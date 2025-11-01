@@ -42,6 +42,9 @@ export default function RateCaptainModal() {
   const [selectedRating, setSelectedRating] = useState<number>(0);
   const [comment, setComment] = useState('');
 
+  // Create styles early to avoid hoisting issues
+  const styles = createStyles(colors);
+
   const handleSubmit = async () => {
     if (selectedRating === 0) {
       showToast('Please select a rating', 'error');
@@ -107,8 +110,6 @@ export default function RateCaptainModal() {
       </SafeAreaView>
     );
   }
-
-  const styles = createStyles(colors);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

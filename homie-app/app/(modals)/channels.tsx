@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Typography, Spacing, BorderRadius } from '@/theme';
-import { useThemeColors } from '@/contexts/ThemeContext';
+import { useTheme, useThemeColors } from '@/contexts/ThemeContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import {
   useChatChannels,
@@ -27,6 +27,7 @@ import { useToast } from '@/components/Toast';
 import { Button } from '@/components/Button';
 
 export default function ChannelsScreen() {
+  const { colors: themeColors } = useTheme();
   const colors = useThemeColors();
   const router = useRouter();
   const { household, member } = useHousehold();
@@ -310,19 +311,20 @@ export default function ChannelsScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Channels</Text>
-        <TouchableOpacity
-          onPress={() => setShowCreateMenu(!showCreateMenu)}
-          style={styles.addButton}
-        >
-          <Ionicons name={showCreateMenu ? 'close' : 'add'} size={24} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
+    <View style={{ flex: 1, backgroundColor: themeColors.background.primary }}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={themeColors.text.primary} />
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: themeColors.text.primary }]}>Channels</Text>
+          <TouchableOpacity
+            onPress={() => setShowCreateMenu(!showCreateMenu)}
+            style={styles.addButton}
+          >
+            <Ionicons name={showCreateMenu ? 'close' : 'add'} size={24} color={themeColors.primary.default} />
+          </TouchableOpacity>
+        </View>
 
       {showCreateMenu && renderCreateMenu()}
       {showGroupForm && renderGroupForm()}
@@ -347,7 +349,8 @@ export default function ChannelsScreen() {
           }
         />
       )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 

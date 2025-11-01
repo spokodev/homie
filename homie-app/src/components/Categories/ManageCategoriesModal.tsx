@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from '@/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   useTaskCategories,
   useCreateCategory,
@@ -43,6 +44,7 @@ export function ManageCategoriesModal({
   onClose,
   onCategorySelected,
 }: ManageCategoriesModalProps) {
+  const { colors } = useTheme();
   const { member } = useHousehold();
   const { data: categories = [], isLoading } = useTaskCategories();
   const createCategory = useCreateCategory();
@@ -150,7 +152,7 @@ export function ManageCategoriesModal({
           <View style={styles.header}>
             <Text style={styles.title}>Task Categories</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={Colors.text} />
+              <Ionicons name="close" size={24} color={colors.text.primary} />
             </TouchableOpacity>
           </View>
 
@@ -319,7 +321,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h4,
-    color: Colors.text,
+    color: Colors.text.default,
   },
   closeButton: {
     padding: Spacing.xs,
@@ -364,7 +366,7 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     ...Typography.bodyLarge,
-    color: Colors.text,
+    color: Colors.text.default,
     fontWeight: '500',
   },
   categoryType: {
